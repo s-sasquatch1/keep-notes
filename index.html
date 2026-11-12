@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keep Notes</title>
+<meta name="theme-color" content="#1e6576">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a binder. Sticky contents rail on the left, one reading column, each section folds like a tabbed divider and opens into an editor. */
+:root{
+  color-scheme:light;
+  --bg:#f2f4f3; --surface:#ffffff; --surface-2:#e8edeb; --fg:#17201d; --muted:#56635e; --line:#d3dbd7;
+  --accent:#1e6576; --accent-soft:#d9eaee; --on-accent:#ffffff; --danger:#a33a2e;
+  --added:#7a5410; --added-bg:#f5ead0; --done:#8b9691; --hit:#ffe27a; --hit-fg:#17201d;
+  --ok:#2a7a57; --warn:#9a5f1c;
+  --g1:#3c58a0; --g2:#94405f; --g3:#2a7a57; --g4:#9a5f1c; --g5:#6a4c9c;
+  --font-display:"Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body:"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111715; --surface:#18201d; --surface-2:#202a27; --fg:#e3eae7; --muted:#9aa7a2; --line:#2d3935;
+  --accent:#6dbccc; --accent-soft:#1b373d; --on-accent:#0e1513; --danger:#f08b7e;
+  --added:#e5c27c; --added-bg:#382d14; --done:#6b7873; --hit:#6a5814; --hit-fg:#fff6d6;
+  --ok:#7fd2a9; --warn:#e5b06c;
+  --g1:#93aaea; --g2:#e690b0; --g3:#7fd2a9; --g4:#e5b06c; --g5:#bba3ec; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111715; --surface:#18201d; --surface-2:#202a27; --fg:#e3eae7; --muted:#9aa7a2; --line:#2d3935;
+  --accent:#6dbccc; --accent-soft:#1b373d; --on-accent:#0e1513; --danger:#f08b7e;
+  --added:#e5c27c; --added-bg:#382d14; --done:#6b7873; --hit:#6a5814; --hit-fg:#fff6d6;
+  --ok:#7fd2a9; --warn:#e5b06c;
+  --g1:#93aaea; --g2:#e690b0; --g3:#7fd2a9; --g4:#e5b06c; --g5:#bba3ec; color-scheme:dark }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--fg);font:15.5px/1.62 var(--font-body);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+a{color:var(--accent);text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+button,input,select,textarea{font-family:inherit}
+
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:44px;max-width:1220px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:env(safe-area-inset-top,0px) 72px}
+main{min-width:0;padding-block:32px 0}
+
+/* Rail */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;max-height:100vh;overflow-y:auto;padding-block:32px 24px;scrollbar-width:thin}
+.rail-toggle{display:none}
+.rail-brand{font:600 13px/1.3 var(--font-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 18px}
+.rail nav{display:flex;flex-direction:column;gap:18px}
+.rail-group h2{font:600 11px/1 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:7px}
+.rail-group h2 i{width:8px;height:8px;border-radius:2px;background:var(--gc,var(--muted));display:inline-block}
+.rail ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.rail a{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:baseline;padding:5px 8px;border-radius:6px;color:var(--fg);text-decoration:none;font-size:13.5px;line-height:1.35}
+.rail a:hover{background:var(--surface-2)}
+.rail a.active{background:var(--accent-soft)}
+.rail a .n,.rail a .c{font:500 11.5px var(--font-mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.rail .add-link{all:unset;cursor:pointer;display:block;padding:5px 8px 5px 36px;font-size:13px;color:var(--accent);border-radius:6px}
+.rail .add-link:hover{background:var(--surface-2)}
+
+/* Header */
+.masthead{display:flex;flex-direction:column;gap:10px;padding-bottom:20px}
+h1.title{font:700 clamp(28px,4.4vw,44px)/1.08 var(--font-display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+.lede{max-width:68ch;color:var(--muted);margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:6px;font-size:13.5px;color:var(--muted)}
+.stats b{font:600 18px var(--font-display);color:var(--fg);font-variant-numeric:tabular-nums;margin-right:4px}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;margin:14px 0 0;padding:0;list-style:none}
+.legend li{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.45}
+.legend li p{margin:0}
+.banner{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--accent-soft);border-radius:10px;padding:12px 16px;margin:4px 0 14px;font-size:14px}
+.banner p{margin:0;flex:1 1 300px}
+.banner.warn{background:var(--added-bg)}
+
+/* Toolbar */
+.toolbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px;border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:8px}
+.tabs{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px}
+.tabs button{border:0;background:transparent;color:var(--muted);font:600 13.5px var(--font-body);padding:6px 14px;border-radius:6px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.search{flex:1 1 180px;min-width:0;position:relative}
+.search input{width:100%;font:16px var(--font-body);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 12px 7px 32px}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+.tool{border:1px solid var(--line);background:var(--surface);color:var(--fg);font:500 13px var(--font-body);padding:7px 11px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.tool:hover{border-color:var(--accent)}
+.tool.small{padding:4px 9px;font-size:12.5px}
+.tool.danger{color:var(--danger)}
+.tool.danger.armed{background:var(--danger);color:var(--on-accent);border-color:var(--danger)}
+.btn{border:0;background:var(--accent);color:var(--on-accent);font:600 13.5px var(--font-body);padding:8px 14px;border-radius:8px;cursor:pointer}
+.btn:disabled{opacity:.6;cursor:default}
+.switch{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.switch input{accent-color:var(--accent);width:15px;height:15px}
+.status{width:100%;font:500 12.5px var(--font-mono);color:var(--muted)}
+.status:empty{display:none}
+.row2{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;width:100%}
+.save{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font:500 12px var(--font-mono);color:var(--muted)}
+.save i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;flex:none}
+.save[data-state="ok"] i{background:var(--ok)}
+.save[data-state="local"] i{background:var(--warn)}
+.save[data-state="busy"] i{background:var(--accent)}
+.save[data-state="error"] i{background:var(--danger)}
+.save button{all:unset;cursor:pointer;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+
+/* File menu */
+.menu{position:relative}
+.menu > summary{list-style:none}
+.menu > summary::-webkit-details-marker{display:none}
+.menu-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.14);padding:6px;display:flex;flex-direction:column;min-width:260px;max-width:calc(100vw - 32px)}
+.menu-panel button{all:unset;cursor:pointer;padding:8px 10px;border-radius:6px;font-size:13.5px;display:flex;flex-direction:column;gap:1px}
+.menu-panel button small{color:var(--muted);font-size:12px}
+.menu-panel button:hover,.menu-panel button:focus-visible{background:var(--surface-2)}
+.menu-panel hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+
+/* Sections */
+.sec{border-bottom:1px solid var(--line);scroll-margin-top:72px}
+.sec-h{margin:0}
+.sec-head{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:14px;align-items:center;padding:18px 4px;cursor:pointer}
+.sec-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.sec-num{font:600 26px/1 var(--font-display);color:var(--gc,var(--muted));font-variant-numeric:tabular-nums;text-align:right}
+.sec-num.word{font:600 11px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+.sec-titles{display:flex;flex-direction:column;gap:3px;min-width:0}
+.sec-title{font:600 19px/1.25 var(--font-display);letter-spacing:-.01em;text-wrap:balance}
+.sec-blurb{font-size:13.5px;color:var(--muted);line-height:1.4}
+.sec-meta{display:flex;align-items:center;gap:12px}
+.pill{font:500 11.5px var(--font-mono);padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pill.zero{background:var(--accent-soft);color:var(--accent)}
+.pill.lock{background:transparent;border:1px solid var(--gc,var(--line));color:var(--gc,var(--muted))}
+.chev{width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .2s}
+.sec.is-open .chev{transform:rotate(-135deg) translate(-2px,-2px)}
+.sec-body{padding:0 4px 36px 70px}
+.sec-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin:-6px 0 8px}
+.veil{margin:0 4px 28px 70px;padding:18px 20px;border:1px dashed var(--gc,var(--line));border-radius:10px;display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center}
+.veil p{margin:0;flex:1 1 260px;font-size:14px;color:var(--muted)}
+.add-sec{margin:22px 0 0}
+.welcome{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;margin:18px 0;display:flex;flex-direction:column;gap:12px;max-width:640px}
+.welcome h2{font:600 20px var(--font-display);margin:0}
+.welcome p{margin:0;color:var(--muted)}
+.welcome .actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* Editor */
+.editor{margin:0 4px 32px 70px;display:flex;flex-direction:column;gap:10px}
+.editor textarea,.full-editor textarea{width:100%;min-height:55vh;resize:vertical;font:13px/1.6 var(--font-mono);color:var(--fg);background:var(--surface);
+  border:1px solid var(--line);border-radius:10px;padding:14px 16px;tab-size:2}
+.editor textarea:focus,.full-editor textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.editor-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.editor-actions .spacer{flex:1}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.hint code{font:12px var(--font-mono);background:var(--surface-2);padding:1px 4px;border-radius:3px}
+.err{font-size:13px;color:var(--danger);margin:0}
+.full-editor{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;gap:10px;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.full-editor h2{font:600 18px var(--font-display);margin:0}
+.full-editor textarea{flex:1;min-height:0}
+
+/* Sync dialog */
+.dialog-back{position:fixed;inset:0;z-index:60;background:rgba(10,16,14,.5);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.dialog{background:var(--surface);color:var(--fg);border-radius:14px;padding:22px;width:min(520px,100%);display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.dialog h2{font:600 19px var(--font-display);margin:0}
+.dialog p{margin:0;font-size:14px;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+.field input{font:16px var(--font-body);font-weight:400;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+.field small{font-weight:400;color:var(--muted)}
+.dialog .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}
+.dialog .actions .spacer{flex:1}
+
+/* Prose */
+.prose{font-size:15px}
+.prose > *:first-child{margin-top:0}
+.prose p,.prose li{max-width:72ch}
+.prose h2{font:600 19px/1.3 var(--font-display);margin:2em 0 .6em}
+.prose h3{font:600 17px/1.3 var(--font-display);margin:2.1em 0 .6em;scroll-margin-top:80px;text-wrap:balance}
+.prose h4{font:600 14px/1.3 var(--font-body);margin:1.6em 0 .4em;scroll-margin-top:80px}
+.prose ul,.prose ol{padding-left:1.3em}
+.prose li{margin:.25em 0}
+.prose li::marker{color:var(--muted)}
+.prose blockquote{margin:1em 0;padding:10px 16px;border-left:3px solid var(--gc,var(--accent));background:var(--surface);border-radius:0 8px 8px 0}
+.prose blockquote p{margin:.3em 0}
+.prose code{font:12.5px var(--font-mono);background:var(--surface-2);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.prose pre{background:var(--surface-2);padding:12px 14px;border-radius:8px;overflow-x:auto}
+.prose pre code{background:none;padding:0;font-size:12.5px;line-height:1.55}
+.prose a{overflow-wrap:anywhere}
+.prose details{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.prose details summary{cursor:pointer;font-weight:600}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.prose table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.45}
+.prose th{text-align:left;font-weight:600;background:var(--surface-2);padding:8px 10px;white-space:nowrap}
+.prose td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top;min-width:90px}
+.prose td:first-child{font-weight:500}
+
+/* Additions */
+.added-tag{display:inline-block;font:600 9.5px/1.5 var(--font-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--added);background:var(--added-bg);padding:0 5px;border-radius:3px;vertical-align:.12em;margin-right:2px}
+.added-note{background:var(--added-bg);background:color-mix(in srgb,var(--added-bg) 55%,transparent);border-radius:3px;padding:0 3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+body.own-words .is-added,body.own-words .added-note,body.own-words .added-tag{display:none!important}
+
+/* Tasks */
+.prose li.task,.todo-sec li.task{list-style:none;position:relative;margin:.3em 0 .3em -1.3em;padding-left:1.75em}
+.prose li.task > input,.todo-sec li.task > input{position:absolute;left:0;top:.28em;width:16px;height:16px;margin:0;accent-color:var(--accent);cursor:pointer}
+.prose li.task.done,.todo-sec li.task.done{color:var(--done);text-decoration:line-through;text-decoration-color:var(--done)}
+
+ul.cards{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px}
+ul.cards li{max-width:none;margin:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.5}
+ul.cards li strong:first-child{display:block;font:600 15px/1.3 var(--font-display);margin-bottom:4px}
+
+mark.hit{background:var(--hit);color:var(--hit-fg);border-radius:2px;padding:0 1px}
+
+/* To-do view */
+.todo-head{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding:18px 0 6px}
+.todo-head h2{font:600 22px var(--font-display);margin:0}
+.bar{height:6px;background:var(--surface-2);border-radius:99px;overflow:hidden;flex:1 1 200px;max-width:340px}
+.bar span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
+.quick-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}
+.quick-add input,.quick-add select{font:16px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.quick-add input{flex:2 1 220px}
+.quick-add select{flex:1 1 160px}
+.todo-sec{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--gc,var(--line));border-radius:10px;padding:16px 18px;margin:14px 0}
+.todo-sec header{display:flex;gap:10px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+.todo-sec h3{font:600 16.5px var(--font-display);margin:0}
+.todo-sec h3 a{color:inherit;text-decoration:none}
+.todo-sec h3 a:hover{text-decoration:underline}
+.todo-sec h4{font:600 11.5px var(--font-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.todo-sec ul{margin:0;padding-left:1.3em}
+.todo-sec .count{font:500 12px var(--font-mono);color:var(--muted)}
+body.hide-done .todo-sec li.task.done{display:none}
+.muted{color:var(--muted);font-size:14px}
+.footer{margin-top:40px;font-size:12.5px;color:var(--muted)}
+
+@media (max-width:920px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:0}
+  .rail{position:static;max-height:none;padding-block:12px 0;overflow:visible}
+  .rail-toggle{display:inline-flex}
+  .rail nav{display:none;margin-top:12px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+  .rail.open nav{display:flex}
+  .rail-brand{display:none}
+  main{padding-block:12px 0}
+  .sec-head{grid-template-columns:30px minmax(0,1fr) auto;gap:10px;padding:14px 2px}
+  .sec-num{font-size:20px}
+  .sec-title{font-size:17px}
+  .sec-body{padding:0 2px 28px}
+  .editor,.veil{margin-left:2px;margin-right:2px}
+  .sec-blurb{display:none}
+  .save{margin-left:0;width:100%}
+  .menu-panel{right:0}
+  .stats b{font-size:16px}
+  .legend{display:none!important}
+  .toolbar{position:static}
+  .lede{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px}
+  .masthead{padding-bottom:10px;gap:8px}
+}
+@media print{
+  .rail,.toolbar,.veil,.chev,.sec-tools,.banner,.add-sec{display:none!important}
+  .sec-body[hidden],.sec[hidden]{display:block!important}
+  .sec.private .sec-body{display:none!important}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail" id="rail">
+    <p class="rail-brand">Keep notes</p>
+    <button class="tool rail-toggle" id="railToggle" type="button" aria-expanded="false" aria-controls="railNav">Contents</button>
+    <nav id="railNav" aria-label="Sections"></nav>
+  </aside>
+
+  <main>
+    <header class="masthead">
+      <h1 class="title" id="docTitle">Notes</h1>
+      <p class="lede" id="lede" hidden></p>
+      <div class="stats" id="stats"></div>
+      <ul class="legend" id="legend" hidden></ul>
+    </header>
+
+    <div class="banner warn" id="conflict" hidden>
+      <p id="conflictText"></p>
+      <button class="btn" type="button" id="conflictUseMine">Use this device's version</button>
+      <button class="tool" type="button" id="conflictDismiss">Keep the other version</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="tabs" role="group" aria-label="View">
+        <button type="button" id="tabRead" aria-pressed="true">Notes</button>
+        <button type="button" id="tabTodo" aria-pressed="false">To-dos</button>
+      </div>
+      <label class="search" for="q">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
+        <input id="q" type="search" placeholder="Search the notes" autocomplete="off">
+      </label>
+      <button class="tool" type="button" id="undoBtn" hidden>Undo</button>
+      <details class="menu" id="fileMenu">
+        <summary class="tool">Menu</summary>
+        <div class="menu-panel" role="menu">
+          <button type="button" id="mSync" role="menuitem">Sync settings…<small>Keep this device in step with your others</small></button>
+          <button type="button" id="mSyncNow" role="menuitem" hidden>Sync now<small>Check for changes from your other devices</small></button>
+          <hr>
+          <button type="button" id="mOpen" role="menuitem">Open a notes file…<small>Load a .md file into this device</small></button>
+          <button type="button" id="mDownload" role="menuitem">Download a copy<small>Save a dated .md backup</small></button>
+          <button type="button" id="mLink" role="menuitem" hidden>Also save to a file…<small>Keep a .md file on this computer up to date</small></button>
+          <button type="button" id="mUnlink" role="menuitem" hidden>Stop saving to the file<small>The file stays as it is</small></button>
+          <hr>
+          <button type="button" id="mEditAll" role="menuitem">Edit everything<small>The whole document as one text</small></button>
+          <button type="button" id="mAddSec" role="menuitem">Add a section<small>A new numbered section with a to-do list</small></button>
+        </div>
+      </details>
+      <input type="file" id="fileInput" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+      <div class="row2">
+        <button class="tool small" type="button" id="expandAll">Open all</button>
+        <button class="tool small" type="button" id="collapseAll">Close all</button>
+        <label class="switch" for="ownWords"><input type="checkbox" id="ownWords"> Hide additions</label>
+        <span class="save" id="save" data-state="local" role="status" aria-live="polite"><i></i><span id="saveText">Saved on this device</span></span>
+      </div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </div>
+
+    <div id="readView"><div id="sections"></div></div>
+    <div id="todoView" hidden></div>
+
+    <p class="footer">Changes save on this device as you go. With sync turned on, they also go to your private notes repository so your other devices can pick them up.</p>
+  </main>
+</div>
+
+<div class="full-editor" id="fullEditor" hidden>
+  <h2>Edit everything</h2>
+  <p class="hint">The whole document in Markdown. Each line starting with <code>## </code> begins a section. To-dos are lines like <code>- [ ] Buy milk</code>; <code>- [x]</code> marks one done. A line like <code>&lt;!-- keep: group: Money; short: Money; blurb: …; private --&gt;</code> under a section title sets its group, short name, summary and privacy.</p>
+  <textarea id="fullText" spellcheck="true" aria-label="Whole document"></textarea>
+  <div class="editor-actions">
+    <button class="btn" type="button" id="fullSave">Save changes</button>
+    <button class="tool" type="button" id="fullCancel">Cancel</button>
+  </div>
+</div>
+
+<div class="dialog-back" id="syncDialog" hidden>
+  <form class="dialog" id="syncForm" autocomplete="off">
+    <h2>Sync settings</h2>
+    <p>Your notes are kept in one file in a <b>private</b> GitHub repository. Every device you connect reads and writes that file, so changes on your phone show up on your computer and the other way round.</p>
+    <label class="field" for="syncOwner">GitHub username
+      <input id="syncOwner" type="text" autocapitalize="off" spellcheck="false" required>
+    </label>
+    <label class="field" for="syncRepo">Private repository name
+      <input id="syncRepo" type="text" autocapitalize="off" spellcheck="false" value="keep-notes-data" required>
+    </label>
+    <label class="field" for="syncPath">File name
+      <input id="syncPath" type="text" autocapitalize="off" spellcheck="false" value="keep-notes.md" required>
+    </label>
+    <label class="field" for="syncToken">Access token
+      <input id="syncToken" type="password" autocapitalize="off" spellcheck="false" placeholder="github_pat_…">
+      <small>A fine-grained token limited to that one repository, with Contents set to Read and write. It is stored only on this device. Leave blank to keep the saved one.</small>
+    </label>
+    <p class="err" id="syncErr" hidden></p>
+    <div class="actions">
+      <button class="btn" type="submit" id="syncConnect">Connect and sync</button>
+      <button class="tool" type="button" id="syncClose">Close</button>
+      <span class="spacer"></span>
+      <button class="tool danger" type="button" id="syncOff" hidden>Turn off sync</button>
+    </div>
+  </form>
+</div>
+
+<script>
+/*! marked v12.0.2 | MIT License | Copyright (c) 2011-2024 Christopher Jeffrey and contributors | https://github.com/markedjs/marked */
+/**
+ * marked v12.0.2 - a markdown parser
+ * Copyright (c) 2011-2024, Christopher Jeffrey. (MIT Licensed)
+ * https://github.com/markedjs/marked
+ */
+!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).marked={})}(this,(function(e){"use strict";function t(){return{async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null}}function n(t){e.defaults=t}e.defaults={async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null};const s=/[&<>"']/,r=new RegExp(s.source,"g"),i=/[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/,l=new RegExp(i.source,"g"),o={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"},a=e=>o[e];function c(e,t){if(t){if(s.test(e))return e.replace(r,a)}else if(i.test(e))return e.replace(l,a);return e}const h=/&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/gi;function p(e){return e.replace(h,((e,t)=>"colon"===(t=t.toLowerCase())?":":"#"===t.charAt(0)?"x"===t.charAt(1)?String.fromCharCode(parseInt(t.substring(2),16)):String.fromCharCode(+t.substring(1)):""))}const u=/(^|[^\[])\^/g;function k(e,t){let n="string"==typeof e?e:e.source;t=t||"";const s={replace:(e,t)=>{let r="string"==typeof t?t:t.source;return r=r.replace(u,"$1"),n=n.replace(e,r),s},getRegex:()=>new RegExp(n,t)};return s}function g(e){try{e=encodeURI(e).replace(/%25/g,"%")}catch(e){return null}return e}const f={exec:()=>null};function d(e,t){const n=e.replace(/\|/g,((e,t,n)=>{let s=!1,r=t;for(;--r>=0&&"\\"===n[r];)s=!s;return s?"|":" |"})).split(/ \|/);let s=0;if(n[0].trim()||n.shift(),n.length>0&&!n[n.length-1].trim()&&n.pop(),t)if(n.length>t)n.splice(t);else for(;n.length<t;)n.push("");for(;s<n.length;s++)n[s]=n[s].trim().replace(/\\\|/g,"|");return n}function x(e,t,n){const s=e.length;if(0===s)return"";let r=0;for(;r<s;){const i=e.charAt(s-r-1);if(i!==t||n){if(i===t||!n)break;r++}else r++}return e.slice(0,s-r)}function b(e,t,n,s){const r=t.href,i=t.title?c(t.title):null,l=e[1].replace(/\\([\[\]])/g,"$1");if("!"!==e[0].charAt(0)){s.state.inLink=!0;const e={type:"link",raw:n,href:r,title:i,text:l,tokens:s.inlineTokens(l)};return s.state.inLink=!1,e}return{type:"image",raw:n,href:r,title:i,text:c(l)}}class w{options;rules;lexer;constructor(t){this.options=t||e.defaults}space(e){const t=this.rules.block.newline.exec(e);if(t&&t[0].length>0)return{type:"space",raw:t[0]}}code(e){const t=this.rules.block.code.exec(e);if(t){const e=t[0].replace(/^ {1,4}/gm,"");return{type:"code",raw:t[0],codeBlockStyle:"indented",text:this.options.pedantic?e:x(e,"\n")}}}fences(e){const t=this.rules.block.fences.exec(e);if(t){const e=t[0],n=function(e,t){const n=e.match(/^(\s+)(?:```)/);if(null===n)return t;const s=n[1];return t.split("\n").map((e=>{const t=e.match(/^\s+/);if(null===t)return e;const[n]=t;return n.length>=s.length?e.slice(s.length):e})).join("\n")}(e,t[3]||"");return{type:"code",raw:e,lang:t[2]?t[2].trim().replace(this.rules.inline.anyPunctuation,"$1"):t[2],text:n}}}heading(e){const t=this.rules.block.heading.exec(e);if(t){let e=t[2].trim();if(/#$/.test(e)){const t=x(e,"#");this.options.pedantic?e=t.trim():t&&!/ $/.test(t)||(e=t.trim())}return{type:"heading",raw:t[0],depth:t[1].length,text:e,tokens:this.lexer.inline(e)}}}hr(e){const t=this.rules.block.hr.exec(e);if(t)return{type:"hr",raw:t[0]}}blockquote(e){const t=this.rules.block.blockquote.exec(e);if(t){let e=t[0].replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g,"\n    $1");e=x(e.replace(/^ *>[ \t]?/gm,""),"\n");const n=this.lexer.state.top;this.lexer.state.top=!0;const s=this.lexer.blockTokens(e);return this.lexer.state.top=n,{type:"blockquote",raw:t[0],tokens:s,text:e}}}list(e){let t=this.rules.block.list.exec(e);if(t){let n=t[1].trim();const s=n.length>1,r={type:"list",raw:"",ordered:s,start:s?+n.slice(0,-1):"",loose:!1,items:[]};n=s?`\\d{1,9}\\${n.slice(-1)}`:`\\${n}`,this.options.pedantic&&(n=s?n:"[*+-]");const i=new RegExp(`^( {0,3}${n})((?:[\t ][^\\n]*)?(?:\\n|$))`);let l="",o="",a=!1;for(;e;){let n=!1;if(!(t=i.exec(e)))break;if(this.rules.block.hr.test(e))break;l=t[0],e=e.substring(l.length);let s=t[2].split("\n",1)[0].replace(/^\t+/,(e=>" ".repeat(3*e.length))),c=e.split("\n",1)[0],h=0;this.options.pedantic?(h=2,o=s.trimStart()):(h=t[2].search(/[^ ]/),h=h>4?1:h,o=s.slice(h),h+=t[1].length);let p=!1;if(!s&&/^ *$/.test(c)&&(l+=c+"\n",e=e.substring(c.length+1),n=!0),!n){const t=new RegExp(`^ {0,${Math.min(3,h-1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ \t][^\\n]*)?(?:\\n|$))`),n=new RegExp(`^ {0,${Math.min(3,h-1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`),r=new RegExp(`^ {0,${Math.min(3,h-1)}}(?:\`\`\`|~~~)`),i=new RegExp(`^ {0,${Math.min(3,h-1)}}#`);for(;e;){const a=e.split("\n",1)[0];if(c=a,this.options.pedantic&&(c=c.replace(/^ {1,4}(?=( {4})*[^ ])/g,"  ")),r.test(c))break;if(i.test(c))break;if(t.test(c))break;if(n.test(e))break;if(c.search(/[^ ]/)>=h||!c.trim())o+="\n"+c.slice(h);else{if(p)break;if(s.search(/[^ ]/)>=4)break;if(r.test(s))break;if(i.test(s))break;if(n.test(s))break;o+="\n"+c}p||c.trim()||(p=!0),l+=a+"\n",e=e.substring(a.length+1),s=c.slice(h)}}r.loose||(a?r.loose=!0:/\n *\n *$/.test(l)&&(a=!0));let u,k=null;this.options.gfm&&(k=/^\[[ xX]\] /.exec(o),k&&(u="[ ] "!==k[0],o=o.replace(/^\[[ xX]\] +/,""))),r.items.push({type:"list_item",raw:l,task:!!k,checked:u,loose:!1,text:o,tokens:[]}),r.raw+=l}r.items[r.items.length-1].raw=l.trimEnd(),r.items[r.items.length-1].text=o.trimEnd(),r.raw=r.raw.trimEnd();for(let e=0;e<r.items.length;e++)if(this.lexer.state.top=!1,r.items[e].tokens=this.lexer.blockTokens(r.items[e].text,[]),!r.loose){const t=r.items[e].tokens.filter((e=>"space"===e.type)),n=t.length>0&&t.some((e=>/\n.*\n/.test(e.raw)));r.loose=n}if(r.loose)for(let e=0;e<r.items.length;e++)r.items[e].loose=!0;return r}}html(e){const t=this.rules.block.html.exec(e);if(t){return{type:"html",block:!0,raw:t[0],pre:"pre"===t[1]||"script"===t[1]||"style"===t[1],text:t[0]}}}def(e){const t=this.rules.block.def.exec(e);if(t){const e=t[1].toLowerCase().replace(/\s+/g," "),n=t[2]?t[2].replace(/^<(.*)>$/,"$1").replace(this.rules.inline.anyPunctuation,"$1"):"",s=t[3]?t[3].substring(1,t[3].length-1).replace(this.rules.inline.anyPunctuation,"$1"):t[3];return{type:"def",tag:e,raw:t[0],href:n,title:s}}}table(e){const t=this.rules.block.table.exec(e);if(!t)return;if(!/[:|]/.test(t[2]))return;const n=d(t[1]),s=t[2].replace(/^\||\| *$/g,"").split("|"),r=t[3]&&t[3].trim()?t[3].replace(/\n[ \t]*$/,"").split("\n"):[],i={type:"table",raw:t[0],header:[],align:[],rows:[]};if(n.length===s.length){for(const e of s)/^ *-+: *$/.test(e)?i.align.push("right"):/^ *:-+: *$/.test(e)?i.align.push("center"):/^ *:-+ *$/.test(e)?i.align.push("left"):i.align.push(null);for(const e of n)i.header.push({text:e,tokens:this.lexer.inline(e)});for(const e of r)i.rows.push(d(e,i.header.length).map((e=>({text:e,tokens:this.lexer.inline(e)}))));return i}}lheading(e){const t=this.rules.block.lheading.exec(e);if(t)return{type:"heading",raw:t[0],depth:"="===t[2].charAt(0)?1:2,text:t[1],tokens:this.lexer.inline(t[1])}}paragraph(e){const t=this.rules.block.paragraph.exec(e);if(t){const e="\n"===t[1].charAt(t[1].length-1)?t[1].slice(0,-1):t[1];return{type:"paragraph",raw:t[0],text:e,tokens:this.lexer.inline(e)}}}text(e){const t=this.rules.block.text.exec(e);if(t)return{type:"text",raw:t[0],text:t[0],tokens:this.lexer.inline(t[0])}}escape(e){const t=this.rules.inline.escape.exec(e);if(t)return{type:"escape",raw:t[0],text:c(t[1])}}tag(e){const t=this.rules.inline.tag.exec(e);if(t)return!this.lexer.state.inLink&&/^<a /i.test(t[0])?this.lexer.state.inLink=!0:this.lexer.state.inLink&&/^<\/a>/i.test(t[0])&&(this.lexer.state.inLink=!1),!this.lexer.state.inRawBlock&&/^<(pre|code|kbd|script)(\s|>)/i.test(t[0])?this.lexer.state.inRawBlock=!0:this.lexer.state.inRawBlock&&/^<\/(pre|code|kbd|script)(\s|>)/i.test(t[0])&&(this.lexer.state.inRawBlock=!1),{type:"html",raw:t[0],inLink:this.lexer.state.inLink,inRawBlock:this.lexer.state.inRawBlock,block:!1,text:t[0]}}link(e){const t=this.rules.inline.link.exec(e);if(t){const e=t[2].trim();if(!this.options.pedantic&&/^</.test(e)){if(!/>$/.test(e))return;const t=x(e.slice(0,-1),"\\");if((e.length-t.length)%2==0)return}else{const e=function(e,t){if(-1===e.indexOf(t[1]))return-1;let n=0;for(let s=0;s<e.length;s++)if("\\"===e[s])s++;else if(e[s]===t[0])n++;else if(e[s]===t[1]&&(n--,n<0))return s;return-1}(t[2],"()");if(e>-1){const n=(0===t[0].indexOf("!")?5:4)+t[1].length+e;t[2]=t[2].substring(0,e),t[0]=t[0].substring(0,n).trim(),t[3]=""}}let n=t[2],s="";if(this.options.pedantic){const e=/^([^'"]*[^\s])\s+(['"])(.*)\2/.exec(n);e&&(n=e[1],s=e[3])}else s=t[3]?t[3].slice(1,-1):"";return n=n.trim(),/^</.test(n)&&(n=this.options.pedantic&&!/>$/.test(e)?n.slice(1):n.slice(1,-1)),b(t,{href:n?n.replace(this.rules.inline.anyPunctuation,"$1"):n,title:s?s.replace(this.rules.inline.anyPunctuation,"$1"):s},t[0],this.lexer)}}reflink(e,t){let n;if((n=this.rules.inline.reflink.exec(e))||(n=this.rules.inline.nolink.exec(e))){const e=t[(n[2]||n[1]).replace(/\s+/g," ").toLowerCase()];if(!e){const e=n[0].charAt(0);return{type:"text",raw:e,text:e}}return b(n,e,n[0],this.lexer)}}emStrong(e,t,n=""){let s=this.rules.inline.emStrongLDelim.exec(e);if(!s)return;if(s[3]&&n.match(/[\p{L}\p{N}]/u))return;if(!(s[1]||s[2]||"")||!n||this.rules.inline.punctuation.exec(n)){const n=[...s[0]].length-1;let r,i,l=n,o=0;const a="*"===s[0][0]?this.rules.inline.emStrongRDelimAst:this.rules.inline.emStrongRDelimUnd;for(a.lastIndex=0,t=t.slice(-1*e.length+n);null!=(s=a.exec(t));){if(r=s[1]||s[2]||s[3]||s[4]||s[5]||s[6],!r)continue;if(i=[...r].length,s[3]||s[4]){l+=i;continue}if((s[5]||s[6])&&n%3&&!((n+i)%3)){o+=i;continue}if(l-=i,l>0)continue;i=Math.min(i,i+l+o);const t=[...s[0]][0].length,a=e.slice(0,n+s.index+t+i);if(Math.min(n,i)%2){const e=a.slice(1,-1);return{type:"em",raw:a,text:e,tokens:this.lexer.inlineTokens(e)}}const c=a.slice(2,-2);return{type:"strong",raw:a,text:c,tokens:this.lexer.inlineTokens(c)}}}}codespan(e){const t=this.rules.inline.code.exec(e);if(t){let e=t[2].replace(/\n/g," ");const n=/[^ ]/.test(e),s=/^ /.test(e)&&/ $/.test(e);return n&&s&&(e=e.substring(1,e.length-1)),e=c(e,!0),{type:"codespan",raw:t[0],text:e}}}br(e){const t=this.rules.inline.br.exec(e);if(t)return{type:"br",raw:t[0]}}del(e){const t=this.rules.inline.del.exec(e);if(t)return{type:"del",raw:t[0],text:t[2],tokens:this.lexer.inlineTokens(t[2])}}autolink(e){const t=this.rules.inline.autolink.exec(e);if(t){let e,n;return"@"===t[2]?(e=c(t[1]),n="mailto:"+e):(e=c(t[1]),n=e),{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}url(e){let t;if(t=this.rules.inline.url.exec(e)){let e,n;if("@"===t[2])e=c(t[0]),n="mailto:"+e;else{let s;do{s=t[0],t[0]=this.rules.inline._backpedal.exec(t[0])?.[0]??""}while(s!==t[0]);e=c(t[0]),n="www."===t[1]?"http://"+t[0]:t[0]}return{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}inlineText(e){const t=this.rules.inline.text.exec(e);if(t){let e;return e=this.lexer.state.inRawBlock?t[0]:c(t[0]),{type:"text",raw:t[0],text:e}}}}const m=/^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/,y=/(?:[*+-]|\d{1,9}[.)])/,$=k(/^(?!bull |blockCode|fences|blockquote|heading|html)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html))+?)\n {0,3}(=+|-+) *(?:\n+|$)/).replace(/bull/g,y).replace(/blockCode/g,/ {4}/).replace(/fences/g,/ {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g,/ {0,3}>/).replace(/heading/g,/ {0,3}#{1,6}/).replace(/html/g,/ {0,3}<[^\n>]+>\n/).getRegex(),z=/^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/,T=/(?!\s*\])(?:\\.|[^\[\]\\])+/,R=k(/^ {0,3}\[(label)\]: *(?:\n *)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n *)?| *\n *)(title))? *(?:\n+|$)/).replace("label",T).replace("title",/(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex(),_=k(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g,y).getRegex(),A="address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul",S=/<\!--(?:-?>|[\s\S]*?(?:-->|$))/,I=k("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n *)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$))","i").replace("comment",S).replace("tag",A).replace("attribute",/ +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex(),E=k(z).replace("hr",m).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("|table","").replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",A).getRegex(),q={blockquote:k(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph",E).getRegex(),code:/^( {4}[^\n]+(?:\n(?: *(?:\n|$))*)?)+/,def:R,fences:/^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/,heading:/^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/,hr:m,html:I,lheading:$,list:_,newline:/^(?: *(?:\n|$))+/,paragraph:E,table:f,text:/^[^\n]+/},Z=k("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr",m).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("blockquote"," {0,3}>").replace("code"," {4}[^\\n]").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",A).getRegex(),L={...q,table:Z,paragraph:k(z).replace("hr",m).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("table",Z).replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",A).getRegex()},P={...q,html:k("^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:\"[^\"]*\"|'[^']*'|\\s[^'\"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))").replace("comment",S).replace(/tag/g,"(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),def:/^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,heading:/^(#{1,6})(.*)(?:\n+|$)/,fences:f,lheading:/^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,paragraph:k(z).replace("hr",m).replace("heading"," *#{1,6} *[^\n]").replace("lheading",$).replace("|table","").replace("blockquote"," {0,3}>").replace("|fences","").replace("|list","").replace("|html","").replace("|tag","").getRegex()},Q=/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/,v=/^( {2,}|\\)\n(?!\s*$)/,B="\\p{P}\\p{S}",C=k(/^((?![*_])[\spunctuation])/,"u").replace(/punctuation/g,B).getRegex(),M=k(/^(?:\*+(?:((?!\*)[punct])|[^\s*]))|^_+(?:((?!_)[punct])|([^\s_]))/,"u").replace(/punct/g,B).getRegex(),O=k("^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)[punct](\\*+)(?=[\\s]|$)|[^punct\\s](\\*+)(?!\\*)(?=[punct\\s]|$)|(?!\\*)[punct\\s](\\*+)(?=[^punct\\s])|[\\s](\\*+)(?!\\*)(?=[punct])|(?!\\*)[punct](\\*+)(?!\\*)(?=[punct])|[^punct\\s](\\*+)(?=[^punct\\s])","gu").replace(/punct/g,B).getRegex(),D=k("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)[punct](_+)(?=[\\s]|$)|[^punct\\s](_+)(?!_)(?=[punct\\s]|$)|(?!_)[punct\\s](_+)(?=[^punct\\s])|[\\s](_+)(?!_)(?=[punct])|(?!_)[punct](_+)(?!_)(?=[punct])","gu").replace(/punct/g,B).getRegex(),j=k(/\\([punct])/,"gu").replace(/punct/g,B).getRegex(),H=k(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme",/[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email",/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex(),U=k(S).replace("(?:--\x3e|$)","--\x3e").getRegex(),X=k("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment",U).replace("attribute",/\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex(),F=/(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/,N=k(/^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/).replace("label",F).replace("href",/<(?:\\.|[^\n<>\\])+>|[^\s\x00-\x1f]*/).replace("title",/"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex(),G=k(/^!?\[(label)\]\[(ref)\]/).replace("label",F).replace("ref",T).getRegex(),J=k(/^!?\[(ref)\](?:\[\])?/).replace("ref",T).getRegex(),K={_backpedal:f,anyPunctuation:j,autolink:H,blockSkip:/\[[^[\]]*?\]\([^\(\)]*?\)|`[^`]*?`|<[^<>]*?>/g,br:v,code:/^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/,del:f,emStrongLDelim:M,emStrongRDelimAst:O,emStrongRDelimUnd:D,escape:Q,link:N,nolink:J,punctuation:C,reflink:G,reflinkSearch:k("reflink|nolink(?!\\()","g").replace("reflink",G).replace("nolink",J).getRegex(),tag:X,text:/^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/,url:f},V={...K,link:k(/^!?\[(label)\]\((.*?)\)/).replace("label",F).getRegex(),reflink:k(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label",F).getRegex()},W={...K,escape:k(Q).replace("])","~|])").getRegex(),url:k(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/,"i").replace("email",/[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),_backpedal:/(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,del:/^(~~?)(?=[^\s~])([\s\S]*?[^\s~])\1(?=[^~]|$)/,text:/^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/},Y={...W,br:k(v).replace("{2,}","*").getRegex(),text:k(W.text).replace("\\b_","\\b_| {2,}\\n").replace(/\{2,\}/g,"*").getRegex()},ee={normal:q,gfm:L,pedantic:P},te={normal:K,gfm:W,breaks:Y,pedantic:V};class ne{tokens;options;state;tokenizer;inlineQueue;constructor(t){this.tokens=[],this.tokens.links=Object.create(null),this.options=t||e.defaults,this.options.tokenizer=this.options.tokenizer||new w,this.tokenizer=this.options.tokenizer,this.tokenizer.options=this.options,this.tokenizer.lexer=this,this.inlineQueue=[],this.state={inLink:!1,inRawBlock:!1,top:!0};const n={block:ee.normal,inline:te.normal};this.options.pedantic?(n.block=ee.pedantic,n.inline=te.pedantic):this.options.gfm&&(n.block=ee.gfm,this.options.breaks?n.inline=te.breaks:n.inline=te.gfm),this.tokenizer.rules=n}static get rules(){return{block:ee,inline:te}}static lex(e,t){return new ne(t).lex(e)}static lexInline(e,t){return new ne(t).inlineTokens(e)}lex(e){e=e.replace(/\r\n|\r/g,"\n"),this.blockTokens(e,this.tokens);for(let e=0;e<this.inlineQueue.length;e++){const t=this.inlineQueue[e];this.inlineTokens(t.src,t.tokens)}return this.inlineQueue=[],this.tokens}blockTokens(e,t=[]){let n,s,r,i;for(e=this.options.pedantic?e.replace(/\t/g,"    ").replace(/^ +$/gm,""):e.replace(/^( *)(\t+)/gm,((e,t,n)=>t+"    ".repeat(n.length)));e;)if(!(this.options.extensions&&this.options.extensions.block&&this.options.extensions.block.some((s=>!!(n=s.call({lexer:this},e,t))&&(e=e.substring(n.raw.length),t.push(n),!0)))))if(n=this.tokenizer.space(e))e=e.substring(n.raw.length),1===n.raw.length&&t.length>0?t[t.length-1].raw+="\n":t.push(n);else if(n=this.tokenizer.code(e))e=e.substring(n.raw.length),s=t[t.length-1],!s||"paragraph"!==s.type&&"text"!==s.type?t.push(n):(s.raw+="\n"+n.raw,s.text+="\n"+n.text,this.inlineQueue[this.inlineQueue.length-1].src=s.text);else if(n=this.tokenizer.fences(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.heading(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.hr(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.blockquote(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.list(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.html(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.def(e))e=e.substring(n.raw.length),s=t[t.length-1],!s||"paragraph"!==s.type&&"text"!==s.type?this.tokens.links[n.tag]||(this.tokens.links[n.tag]={href:n.href,title:n.title}):(s.raw+="\n"+n.raw,s.text+="\n"+n.raw,this.inlineQueue[this.inlineQueue.length-1].src=s.text);else if(n=this.tokenizer.table(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.lheading(e))e=e.substring(n.raw.length),t.push(n);else{if(r=e,this.options.extensions&&this.options.extensions.startBlock){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startBlock.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(r=e.substring(0,t+1))}if(this.state.top&&(n=this.tokenizer.paragraph(r)))s=t[t.length-1],i&&"paragraph"===s.type?(s.raw+="\n"+n.raw,s.text+="\n"+n.text,this.inlineQueue.pop(),this.inlineQueue[this.inlineQueue.length-1].src=s.text):t.push(n),i=r.length!==e.length,e=e.substring(n.raw.length);else if(n=this.tokenizer.text(e))e=e.substring(n.raw.length),s=t[t.length-1],s&&"text"===s.type?(s.raw+="\n"+n.raw,s.text+="\n"+n.text,this.inlineQueue.pop(),this.inlineQueue[this.inlineQueue.length-1].src=s.text):t.push(n);else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}return this.state.top=!0,t}inline(e,t=[]){return this.inlineQueue.push({src:e,tokens:t}),t}inlineTokens(e,t=[]){let n,s,r,i,l,o,a=e;if(this.tokens.links){const e=Object.keys(this.tokens.links);if(e.length>0)for(;null!=(i=this.tokenizer.rules.inline.reflinkSearch.exec(a));)e.includes(i[0].slice(i[0].lastIndexOf("[")+1,-1))&&(a=a.slice(0,i.index)+"["+"a".repeat(i[0].length-2)+"]"+a.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex))}for(;null!=(i=this.tokenizer.rules.inline.blockSkip.exec(a));)a=a.slice(0,i.index)+"["+"a".repeat(i[0].length-2)+"]"+a.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);for(;null!=(i=this.tokenizer.rules.inline.anyPunctuation.exec(a));)a=a.slice(0,i.index)+"++"+a.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);for(;e;)if(l||(o=""),l=!1,!(this.options.extensions&&this.options.extensions.inline&&this.options.extensions.inline.some((s=>!!(n=s.call({lexer:this},e,t))&&(e=e.substring(n.raw.length),t.push(n),!0)))))if(n=this.tokenizer.escape(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.tag(e))e=e.substring(n.raw.length),s=t[t.length-1],s&&"text"===n.type&&"text"===s.type?(s.raw+=n.raw,s.text+=n.text):t.push(n);else if(n=this.tokenizer.link(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.reflink(e,this.tokens.links))e=e.substring(n.raw.length),s=t[t.length-1],s&&"text"===n.type&&"text"===s.type?(s.raw+=n.raw,s.text+=n.text):t.push(n);else if(n=this.tokenizer.emStrong(e,a,o))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.codespan(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.br(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.del(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.autolink(e))e=e.substring(n.raw.length),t.push(n);else if(this.state.inLink||!(n=this.tokenizer.url(e))){if(r=e,this.options.extensions&&this.options.extensions.startInline){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startInline.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(r=e.substring(0,t+1))}if(n=this.tokenizer.inlineText(r))e=e.substring(n.raw.length),"_"!==n.raw.slice(-1)&&(o=n.raw.slice(-1)),l=!0,s=t[t.length-1],s&&"text"===s.type?(s.raw+=n.raw,s.text+=n.text):t.push(n);else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}else e=e.substring(n.raw.length),t.push(n);return t}}class se{options;constructor(t){this.options=t||e.defaults}code(e,t,n){const s=(t||"").match(/^\S*/)?.[0];return e=e.replace(/\n$/,"")+"\n",s?'<pre><code class="language-'+c(s)+'">'+(n?e:c(e,!0))+"</code></pre>\n":"<pre><code>"+(n?e:c(e,!0))+"</code></pre>\n"}blockquote(e){return`<blockquote>\n${e}</blockquote>\n`}html(e,t){return e}heading(e,t,n){return`<h${t}>${e}</h${t}>\n`}hr(){return"<hr>\n"}list(e,t,n){const s=t?"ol":"ul";return"<"+s+(t&&1!==n?' start="'+n+'"':"")+">\n"+e+"</"+s+">\n"}listitem(e,t,n){return`<li>${e}</li>\n`}checkbox(e){return"<input "+(e?'checked="" ':"")+'disabled="" type="checkbox">'}paragraph(e){return`<p>${e}</p>\n`}table(e,t){return t&&(t=`<tbody>${t}</tbody>`),"<table>\n<thead>\n"+e+"</thead>\n"+t+"</table>\n"}tablerow(e){return`<tr>\n${e}</tr>\n`}tablecell(e,t){const n=t.header?"th":"td";return(t.align?`<${n} align="${t.align}">`:`<${n}>`)+e+`</${n}>\n`}strong(e){return`<strong>${e}</strong>`}em(e){return`<em>${e}</em>`}codespan(e){return`<code>${e}</code>`}br(){return"<br>"}del(e){return`<del>${e}</del>`}link(e,t,n){const s=g(e);if(null===s)return n;let r='<a href="'+(e=s)+'"';return t&&(r+=' title="'+t+'"'),r+=">"+n+"</a>",r}image(e,t,n){const s=g(e);if(null===s)return n;let r=`<img src="${e=s}" alt="${n}"`;return t&&(r+=` title="${t}"`),r+=">",r}text(e){return e}}class re{strong(e){return e}em(e){return e}codespan(e){return e}del(e){return e}html(e){return e}text(e){return e}link(e,t,n){return""+n}image(e,t,n){return""+n}br(){return""}}class ie{options;renderer;textRenderer;constructor(t){this.options=t||e.defaults,this.options.renderer=this.options.renderer||new se,this.renderer=this.options.renderer,this.renderer.options=this.options,this.textRenderer=new re}static parse(e,t){return new ie(t).parse(e)}static parseInline(e,t){return new ie(t).parseInline(e)}parse(e,t=!0){let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions&&this.options.extensions.renderers&&this.options.extensions.renderers[r.type]){const e=r,t=this.options.extensions.renderers[e.type].call({parser:this},e);if(!1!==t||!["space","hr","heading","code","table","blockquote","list","html","paragraph","text"].includes(e.type)){n+=t||"";continue}}switch(r.type){case"space":continue;case"hr":n+=this.renderer.hr();continue;case"heading":{const e=r;n+=this.renderer.heading(this.parseInline(e.tokens),e.depth,p(this.parseInline(e.tokens,this.textRenderer)));continue}case"code":{const e=r;n+=this.renderer.code(e.text,e.lang,!!e.escaped);continue}case"table":{const e=r;let t="",s="";for(let t=0;t<e.header.length;t++)s+=this.renderer.tablecell(this.parseInline(e.header[t].tokens),{header:!0,align:e.align[t]});t+=this.renderer.tablerow(s);let i="";for(let t=0;t<e.rows.length;t++){const n=e.rows[t];s="";for(let t=0;t<n.length;t++)s+=this.renderer.tablecell(this.parseInline(n[t].tokens),{header:!1,align:e.align[t]});i+=this.renderer.tablerow(s)}n+=this.renderer.table(t,i);continue}case"blockquote":{const e=r,t=this.parse(e.tokens);n+=this.renderer.blockquote(t);continue}case"list":{const e=r,t=e.ordered,s=e.start,i=e.loose;let l="";for(let t=0;t<e.items.length;t++){const n=e.items[t],s=n.checked,r=n.task;let o="";if(n.task){const e=this.renderer.checkbox(!!s);i?n.tokens.length>0&&"paragraph"===n.tokens[0].type?(n.tokens[0].text=e+" "+n.tokens[0].text,n.tokens[0].tokens&&n.tokens[0].tokens.length>0&&"text"===n.tokens[0].tokens[0].type&&(n.tokens[0].tokens[0].text=e+" "+n.tokens[0].tokens[0].text)):n.tokens.unshift({type:"text",text:e+" "}):o+=e+" "}o+=this.parse(n.tokens,i),l+=this.renderer.listitem(o,r,!!s)}n+=this.renderer.list(l,t,s);continue}case"html":{const e=r;n+=this.renderer.html(e.text,e.block);continue}case"paragraph":{const e=r;n+=this.renderer.paragraph(this.parseInline(e.tokens));continue}case"text":{let i=r,l=i.tokens?this.parseInline(i.tokens):i.text;for(;s+1<e.length&&"text"===e[s+1].type;)i=e[++s],l+="\n"+(i.tokens?this.parseInline(i.tokens):i.text);n+=t?this.renderer.paragraph(l):l;continue}default:{const e='Token with "'+r.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}parseInline(e,t){t=t||this.renderer;let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions&&this.options.extensions.renderers&&this.options.extensions.renderers[r.type]){const e=this.options.extensions.renderers[r.type].call({parser:this},r);if(!1!==e||!["escape","html","link","image","strong","em","codespan","br","del","text"].includes(r.type)){n+=e||"";continue}}switch(r.type){case"escape":{const e=r;n+=t.text(e.text);break}case"html":{const e=r;n+=t.html(e.text);break}case"link":{const e=r;n+=t.link(e.href,e.title,this.parseInline(e.tokens,t));break}case"image":{const e=r;n+=t.image(e.href,e.title,e.text);break}case"strong":{const e=r;n+=t.strong(this.parseInline(e.tokens,t));break}case"em":{const e=r;n+=t.em(this.parseInline(e.tokens,t));break}case"codespan":{const e=r;n+=t.codespan(e.text);break}case"br":n+=t.br();break;case"del":{const e=r;n+=t.del(this.parseInline(e.tokens,t));break}case"text":{const e=r;n+=t.text(e.text);break}default:{const e='Token with "'+r.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}}class le{options;constructor(t){this.options=t||e.defaults}static passThroughHooks=new Set(["preprocess","postprocess","processAllTokens"]);preprocess(e){return e}postprocess(e){return e}processAllTokens(e){return e}}class oe{defaults={async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null};options=this.setOptions;parse=this.#e(ne.lex,ie.parse);parseInline=this.#e(ne.lexInline,ie.parseInline);Parser=ie;Renderer=se;TextRenderer=re;Lexer=ne;Tokenizer=w;Hooks=le;constructor(...e){this.use(...e)}walkTokens(e,t){let n=[];for(const s of e)switch(n=n.concat(t.call(this,s)),s.type){case"table":{const e=s;for(const s of e.header)n=n.concat(this.walkTokens(s.tokens,t));for(const s of e.rows)for(const e of s)n=n.concat(this.walkTokens(e.tokens,t));break}case"list":{const e=s;n=n.concat(this.walkTokens(e.items,t));break}default:{const e=s;this.defaults.extensions?.childTokens?.[e.type]?this.defaults.extensions.childTokens[e.type].forEach((s=>{const r=e[s].flat(1/0);n=n.concat(this.walkTokens(r,t))})):e.tokens&&(n=n.concat(this.walkTokens(e.tokens,t)))}}return n}use(...e){const t=this.defaults.extensions||{renderers:{},childTokens:{}};return e.forEach((e=>{const n={...e};if(n.async=this.defaults.async||n.async||!1,e.extensions&&(e.extensions.forEach((e=>{if(!e.name)throw new Error("extension name required");if("renderer"in e){const n=t.renderers[e.name];t.renderers[e.name]=n?function(...t){let s=e.renderer.apply(this,t);return!1===s&&(s=n.apply(this,t)),s}:e.renderer}if("tokenizer"in e){if(!e.level||"block"!==e.level&&"inline"!==e.level)throw new Error("extension level must be 'block' or 'inline'");const n=t[e.level];n?n.unshift(e.tokenizer):t[e.level]=[e.tokenizer],e.start&&("block"===e.level?t.startBlock?t.startBlock.push(e.start):t.startBlock=[e.start]:"inline"===e.level&&(t.startInline?t.startInline.push(e.start):t.startInline=[e.start]))}"childTokens"in e&&e.childTokens&&(t.childTokens[e.name]=e.childTokens)})),n.extensions=t),e.renderer){const t=this.defaults.renderer||new se(this.defaults);for(const n in e.renderer){if(!(n in t))throw new Error(`renderer '${n}' does not exist`);if("options"===n)continue;const s=n,r=e.renderer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n||""}}n.renderer=t}if(e.tokenizer){const t=this.defaults.tokenizer||new w(this.defaults);for(const n in e.tokenizer){if(!(n in t))throw new Error(`tokenizer '${n}' does not exist`);if(["options","rules","lexer"].includes(n))continue;const s=n,r=e.tokenizer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.tokenizer=t}if(e.hooks){const t=this.defaults.hooks||new le;for(const n in e.hooks){if(!(n in t))throw new Error(`hook '${n}' does not exist`);if("options"===n)continue;const s=n,r=e.hooks[s],i=t[s];le.passThroughHooks.has(n)?t[s]=e=>{if(this.defaults.async)return Promise.resolve(r.call(t,e)).then((e=>i.call(t,e)));const n=r.call(t,e);return i.call(t,n)}:t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.hooks=t}if(e.walkTokens){const t=this.defaults.walkTokens,s=e.walkTokens;n.walkTokens=function(e){let n=[];return n.push(s.call(this,e)),t&&(n=n.concat(t.call(this,e))),n}}this.defaults={...this.defaults,...n}})),this}setOptions(e){return this.defaults={...this.defaults,...e},this}lexer(e,t){return ne.lex(e,t??this.defaults)}parser(e,t){return ie.parse(e,t??this.defaults)}#e(e,t){return(n,s)=>{const r={...s},i={...this.defaults,...r};!0===this.defaults.async&&!1===r.async&&(i.silent||console.warn("marked(): The async option was set to true by an extension. The async: false option sent to parse will be ignored."),i.async=!0);const l=this.#t(!!i.silent,!!i.async);if(null==n)return l(new Error("marked(): input parameter is undefined or null"));if("string"!=typeof n)return l(new Error("marked(): input parameter is of type "+Object.prototype.toString.call(n)+", string expected"));if(i.hooks&&(i.hooks.options=i),i.async)return Promise.resolve(i.hooks?i.hooks.preprocess(n):n).then((t=>e(t,i))).then((e=>i.hooks?i.hooks.processAllTokens(e):e)).then((e=>i.walkTokens?Promise.all(this.walkTokens(e,i.walkTokens)).then((()=>e)):e)).then((e=>t(e,i))).then((e=>i.hooks?i.hooks.postprocess(e):e)).catch(l);try{i.hooks&&(n=i.hooks.preprocess(n));let s=e(n,i);i.hooks&&(s=i.hooks.processAllTokens(s)),i.walkTokens&&this.walkTokens(s,i.walkTokens);let r=t(s,i);return i.hooks&&(r=i.hooks.postprocess(r)),r}catch(e){return l(e)}}}#t(e,t){return n=>{if(n.message+="\nPlease report this to https://github.com/markedjs/marked.",e){const e="<p>An error occurred:</p><pre>"+c(n.message+"",!0)+"</pre>";return t?Promise.resolve(e):e}if(t)return Promise.reject(n);throw n}}}const ae=new oe;function ce(e,t){return ae.parse(e,t)}ce.options=ce.setOptions=function(e){return ae.setOptions(e),ce.defaults=ae.defaults,n(ce.defaults),ce},ce.getDefaults=t,ce.defaults=e.defaults,ce.use=function(...e){return ae.use(...e),ce.defaults=ae.defaults,n(ce.defaults),ce},ce.walkTokens=function(e,t){return ae.walkTokens(e,t)},ce.parseInline=ae.parseInline,ce.Parser=ie,ce.parser=ie.parse,ce.Renderer=se,ce.TextRenderer=re,ce.Lexer=ne,ce.lexer=ne.lex,ce.Tokenizer=w,ce.Hooks=le,ce.parse=ce;const he=ce.options,pe=ce.setOptions,ue=ce.use,ke=ce.walkTokens,ge=ce.parseInline,fe=ce,de=ie.parse,xe=ne.lex;e.Hooks=le,e.Lexer=ne,e.Marked=oe,e.Parser=ie,e.Renderer=se,e.TextRenderer=re,e.Tokenizer=w,e.getDefaults=t,e.lexer=xe,e.marked=ce,e.options=he,e.parse=fe,e.parseInline=ge,e.parser=de,e.setOptions=pe,e.use=ue,e.walkTokens=ke}));
+
+</script>
+<script>
+(function(){
+  "use strict";
+  var NS = "keepnotes:";
+  function lsGet(k, d){ try{ var v = localStorage.getItem(NS+k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } }
+  function lsSet(k, v){ try{ if(v === null || v === undefined) localStorage.removeItem(NS+k); else localStorage.setItem(NS+k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+  function ssGet(k){ try{ return sessionStorage.getItem(NS+k); }catch(e){ return null; } }
+  function ssSet(k, v){ try{ if(v === null) sessionStorage.removeItem(NS+k); else sessionStorage.setItem(NS+k, v); }catch(e){} }
+  function $(id){ return document.getElementById(id); }
+  function norm(s){ return s.replace(/\s+/g, " ").trim(); }
+  function fixEol(s){ return s.replace(/\r\n?/g, "\n"); }
+  function esc(s){ var d = document.createElement("span"); d.textContent = s; return d.innerHTML; }
+
+  var doc = lsGet("doc", null);
+  var dirty = lsGet("dirty", false);
+  var undoStack = [];
+  var parts = [], sections = [];
+  var openSet = new Set(lsGet("open", ["start-here"]));
+  var revealed = ssGet("private") === "1";
+  var FS = typeof window.showSaveFilePicker === "function";
+  var fileHandle = null, fileOk = false, lastSaved = null, saveErr = "", saveTimer = null, localErr = false;
+
+  var sectionsEl = $("sections"), nav = $("railNav"), todoView = $("todoView"), readView = $("readView"), q = $("q");
+
+  if(!window.marked){ sectionsEl.innerHTML = '<p class="err">The Markdown library failed to load, so the notes cannot be shown.</p>'; return; }
+
+  /* ---------- document model ---------- */
+  var TASK_RE = /^\s*(?:[-*+]|\d+[.)])\s+\[[ xX]\](?=\s)/;
+  function splitDoc(md){ return md.split(/(?=^## )/m); }
+  function taskLines(text){
+    var out = [], fence = false;
+    text.split("\n").forEach(function(l, i){ if(/^\s*(```|~~~)/.test(l)){ fence = !fence; return; } if(!fence && TASK_RE.test(l)) out.push(i); });
+    return out;
+  }
+  function stripTrail(p){ var t = p.replace(/\s+$/, ""); while(/\n---$/.test(t) || t === "---"){ t = t.replace(/-{3}$/, "").replace(/\s+$/, ""); } return t; }
+  function sepFor(index, total){ return index === total - 1 ? "\n" : "\n\n---\n\n"; }
+  function readMeta(text){
+    var m = text.match(/<!--\s*keep:([\s\S]*?)-->/), meta = {};
+    if(!m) return meta;
+    m[1].split(";").forEach(function(bit){
+      var i = bit.indexOf(":"), k = (i < 0 ? bit : bit.slice(0, i)).trim().toLowerCase(), v = i < 0 ? true : bit.slice(i + 1).trim();
+      if(k) meta[k] = v;
+    });
+    return meta;
+  }
+  function markAdded(md){
+    return md.replace(/\[added( interpretation)?(?::\s*([^\]]*))?\]/g, function(m, interp, body){
+      var tag = '<span class="added-tag">' + (interp ? "guess" : "added") + '</span>';
+      return body ? '<span class="added-note">' + tag + ' ' + body + '</span>' : tag;
+    });
+  }
+  function parse(md){ var d = document.createElement("div"); d.innerHTML = marked.parse(markAdded(md), { gfm:true }); return d; }
+  function slug(el){
+    var c = el.cloneNode(true);
+    c.querySelectorAll(".added-tag").forEach(function(t){ t.remove(); });
+    return c.textContent.toLowerCase().trim().replace(/[^\p{L}\p{N}\s-]/gu, "").replace(/\s/g, "-") || "section";
+  }
+
+  /* ---------- local saving ---------- */
+  function persist(){
+    localErr = !lsSet("doc", doc);
+    dirty = true; lsSet("dirty", true);
+    if(fileHandle && fileOk) scheduleSave();
+    markSyncDirty();
+    updateSave();
+    $("undoBtn").hidden = !undoStack.length;
+  }
+  function pushUndo(){ if(doc !== null){ undoStack.push(doc); if(undoStack.length > 60) undoStack.shift(); } }
+  function change(newDoc, after){
+    newDoc = fixEol(newDoc);
+    if(newDoc === doc){ if(after) after(); return; }
+    pushUndo(); doc = newDoc; persist(); render(); if(after) after();
+  }
+  function doUndo(){ if(!undoStack.length) return; doc = undoStack.pop(); persist(); render(); flash("Undone"); }
+
+  var dbp = null;
+  function db(){
+    if(!dbp) dbp = new Promise(function(res, rej){ var r = indexedDB.open("keepnotes", 1); r.onupgradeneeded = function(){ r.result.createObjectStore("kv"); }; r.onsuccess = function(){ res(r.result); }; r.onerror = function(){ rej(r.error); }; });
+    return dbp;
+  }
+  function idb(mode, fn){ return db().then(function(d){ return new Promise(function(res, rej){ var tx = d.transaction("kv", mode), st = tx.objectStore("kv"), r = fn(st); tx.oncomplete = function(){ res(r && r.result); }; tx.onerror = function(){ rej(tx.error); }; }); }); }
+  function idbGet(k){ return idb("readonly", function(s){ return s.get(k); }); }
+  function idbSet(k, v){ return idb("readwrite", function(s){ return s.put(v, k); }); }
+  function idbDel(k){ return idb("readwrite", function(s){ return s.delete(k); }); }
+
+  function scheduleSave(){ clearTimeout(saveTimer); saveTimer = setTimeout(writeFile, 700); }
+  async function writeFile(){
+    clearTimeout(saveTimer); saveTimer = null;
+    if(!fileHandle || doc === null) return;
+    try{
+      var w = await fileHandle.createWritable(); await w.write(doc); await w.close();
+      dirty = false; lsSet("dirty", false); lastSaved = new Date(); saveErr = ""; fileOk = true;
+    }catch(e){
+      saveErr = (e && e.message) || String(e);
+      if(e && (e.name === "NotAllowedError" || e.name === "SecurityError")){ fileOk = false; saveErr = ""; }
+    }
+    updateSave();
+  }
+  var fileTypes = [{ description:"Markdown notes", accept:{ "text/markdown":[".md", ".markdown"], "text/plain":[".txt"] } }];
+  async function linkNewFile(){
+    closeMenu();
+    if(!FS || doc === null) return;
+    try{
+      var h = await window.showSaveFilePicker({ suggestedName:"keep-notes.md", types:fileTypes });
+      fileHandle = h; fileOk = true; await idbSet("handle", h); await writeFile();
+      flash("Also saving to " + h.name);
+    }catch(e){ if(!e || e.name !== "AbortError"){ saveErr = (e && e.message) || String(e); updateSave(); } }
+  }
+  function openFile(){ closeMenu(); $("fileInput").click(); }
+  $("fileInput").addEventListener("change", function(){
+    var f = this.files && this.files[0]; if(!f) return;
+    f.text().then(function(t){ change(t, function(){ flash("Loaded " + f.name); }); });
+    this.value = "";
+  });
+  function download(){
+    closeMenu();
+    if(doc === null) return;
+    var d = new Date(), stamp = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([doc], { type:"text/markdown" }));
+    a.download = "keep-notes-" + stamp + ".md";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+  }
+  async function reconnectFile(){
+    if(!fileHandle) return;
+    try{ var p = await fileHandle.requestPermission({ mode:"readwrite" }); if(p === "granted"){ fileOk = true; await writeFile(); } }
+    catch(e){ saveErr = (e && e.message) || String(e); }
+    updateSave();
+  }
+  async function unlink(){ closeMenu(); fileHandle = null; fileOk = false; saveErr = ""; try{ await idbDel("handle"); }catch(e){} updateSave(); flash("Stopped saving to the file"); }
+
+  /* ---------- GitHub sync ---------- */
+  var API = lsGet("apiBase", "https://api.github.com");   // overridable only for testing
+  var sync = lsGet("sync", null);                 // { owner, repo, path }
+  var token = lsGet("token", null);
+  var syncBusy = false, syncAgain = false, syncErr = "", syncOffline = false, lastSync = lsGet("lastSync", null), syncTimer = null, retries = 0;
+  var syncDirty = lsGet("syncDirty", false);
+  var conflictLocal = null;
+
+  function syncOn(){ return !!(sync && token); }
+  function markSyncDirty(){ if(!syncOn()) return; syncDirty = true; lsSet("syncDirty", true); clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 1500); }
+  function setBase(sha, text){ lsSet("syncSha", sha); lsSet("syncBase", text); }
+  function deviceName(){ return /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? "phone" : "computer"; }
+  function toB64(str){ var bytes = new TextEncoder().encode(str), bin = ""; for(var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+  function fromB64(b64){ var bin = atob(b64.replace(/\s/g, "")), bytes = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+  function apiUrl(path){ return API + "/repos/" + encodeURIComponent(sync.owner) + "/" + encodeURIComponent(sync.repo) + "/contents/" + path.split("/").map(encodeURIComponent).join("/"); }
+  function api(method, path, body, accept){
+    var headers = { "Authorization":"Bearer " + token, "Accept":accept || "application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28" };
+    if(body) headers["Content-Type"] = "application/json";
+    return fetch(apiUrl(path) + (method === "GET" ? "?t=" + Date.now() : ""), { method:method, headers:headers, cache:"no-store", body:body ? JSON.stringify(body) : undefined });
+  }
+  async function apiError(r){
+    var msg = ""; try{ msg = (await r.json()).message || ""; }catch(e){}
+    if(r.status === 401) return "GitHub didn't accept the access token. Check it in Sync settings.";
+    if(r.status === 403) return "The token isn't allowed to change this repository. Give it Contents: Read and write.";
+    if(r.status === 404) return "Couldn't find that repository. Check the username and repository name.";
+    return "GitHub said: " + (msg || r.status);
+  }
+
+  async function syncNow(){
+    if(!syncOn()) return;
+    if(syncBusy){ syncAgain = true; return; }
+    clearTimeout(syncTimer);
+    if(document.querySelector(".editor") || !$("fullEditor").hidden){ syncTimer = setTimeout(syncNow, 5000); return; }
+    syncBusy = true; updateSave();
+    try{
+      var r = await api("GET", sync.path);
+      if(r.status === 404){
+        var check = await fetch(API + "/repos/" + encodeURIComponent(sync.owner) + "/" + encodeURIComponent(sync.repo), { headers:{ "Authorization":"Bearer " + token, "Accept":"application/vnd.github+json" }, cache:"no-store" });
+        if(!check.ok) throw new Error(await apiError(check));
+        if(doc === null) throw new Error("The repository has no " + sync.path + " yet. Open your notes on a device that has them and sync from there first.");
+        await pushDoc(null);
+      } else if(!r.ok){
+        throw new Error(await apiError(r));
+      } else {
+        var j = await r.json();
+        var remote = j.content ? fromB64(j.content) : await (await api("GET", sync.path, null, "application/vnd.github.raw")).text();
+        remote = fixEol(remote);
+        var baseSha = lsGet("syncSha", null), baseText = lsGet("syncBase", null);
+        if(doc === null){ adopt(remote, j.sha); flash("Notes loaded from sync"); }
+        else if(remote === doc){ setBase(j.sha, remote); clearSyncDirty(doc); }
+        else if(j.sha === baseSha){ if(syncDirty) await pushDoc(j.sha); }
+        else if(!syncDirty){ adopt(remote, j.sha); flash("Updated with changes from your other device"); }
+        else {
+          var merged = baseText !== null ? merge3(baseText, doc, remote) : null;
+          if(merged !== null){
+            var before = doc; pushUndo(); doc = merged; lsSet("doc", doc); render(); setBase(j.sha, remote);
+            await pushDoc(j.sha); flash(before === merged ? "Synced" : "Merged changes from your other device");
+          } else { await handleConflict(remote, j.sha); }
+        }
+      }
+      syncErr = ""; syncOffline = false; retries = 0;
+      lastSync = Date.now(); lsSet("lastSync", lastSync);
+    }catch(e){
+      if(e && e.retry && retries < 3){ retries++; syncAgain = true; }
+      else if(e instanceof TypeError || !navigator.onLine){ syncOffline = true; }
+      else { syncErr = (e && e.message) || String(e); }
+    }
+    syncBusy = false; updateSave();
+    if(syncAgain){ syncAgain = false; setTimeout(syncNow, 300); }
+  }
+  function clearSyncDirty(sent){ if(doc === sent){ syncDirty = false; lsSet("syncDirty", false); } }
+  function adopt(text, sha){ pushUndo(); doc = text; lsSet("doc", doc); setBase(sha, text); syncDirty = false; lsSet("syncDirty", false); render(); $("undoBtn").hidden = !undoStack.length; }
+  async function pushDoc(sha){
+    var sent = doc, body = { message:"Update notes from " + deviceName(), content:toB64(sent) };
+    if(sha) body.sha = sha;
+    var r = await api("PUT", sync.path, body);
+    if(r.status === 409 || r.status === 422){ var e = new Error("Changed elsewhere"); e.retry = true; throw e; }
+    if(!r.ok) throw new Error(await apiError(r));
+    var j = await r.json(); setBase(j.content.sha, sent); clearSyncDirty(sent);
+  }
+  async function handleConflict(remote, sha){
+    var mine = doc, d = new Date(), two = function(n){ return String(n).padStart(2, "0"); };
+    var stamp = d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()) + " " + two(d.getHours()) + "." + two(d.getMinutes());
+    var copy = sync.path.replace(/\.md$/i, "") + " (from " + deviceName() + " " + stamp + ").md", saved = false;
+    try{ var r = await api("PUT", copy, { message:"Keep a copy of clashing edits from " + deviceName(), content:toB64(mine) }); saved = r.ok; }catch(e){}
+    conflictLocal = mine; lsSet("conflictLocal", mine);
+    adopt(remote, sha);
+    $("conflictText").textContent = "Your other device changed the same part of the notes while this one was offline. Its version is shown now. " +
+      (saved ? "This device's version was saved in your repository as “" + copy + "”." : "This device's version is kept here until you choose.");
+    $("conflict").hidden = false;
+  }
+  $("conflictUseMine").addEventListener("click", function(){
+    var mine = conflictLocal || lsGet("conflictLocal", null); $("conflict").hidden = true; lsSet("conflictLocal", null); conflictLocal = null;
+    if(mine) change(mine, function(){ flash("This device's version restored; syncing it now"); });
+  });
+  $("conflictDismiss").addEventListener("click", function(){ $("conflict").hidden = true; lsSet("conflictLocal", null); conflictLocal = null; });
+
+  /* Three-way line merge: applies both sides' edits when they touch different lines. */
+  function diffHunks(base, other){
+    var p = 0; while(p < base.length && p < other.length && base[p] === other[p]) p++;
+    var s = 0; while(s < base.length - p && s < other.length - p && base[base.length - 1 - s] === other[other.length - 1 - s]) s++;
+    var B = base.slice(p, base.length - s), O = other.slice(p, other.length - s), n = B.length, m = O.length;
+    if(!n && !m) return [];
+    if(n * m > 4e6) return [{ start:p, end:p + n, lines:O }];
+    var W = m + 1, dp = new Uint32Array((n + 1) * W);
+    for(var i = n - 1; i >= 0; i--) for(var j = m - 1; j >= 0; j--) dp[i*W + j] = B[i] === O[j] ? dp[(i+1)*W + j + 1] + 1 : Math.max(dp[(i+1)*W + j], dp[i*W + j + 1]);
+    var hunks = [], cur = null; i = 0; j = 0;
+    while(i < n || j < m){
+      if(i < n && j < m && B[i] === O[j]){ if(cur){ hunks.push(cur); cur = null; } i++; j++; }
+      else if(j < m && (i >= n || dp[i*W + j + 1] >= dp[(i+1)*W + j])){ if(!cur) cur = { start:p + i, end:p + i, lines:[] }; cur.lines.push(O[j]); j++; }
+      else { if(!cur) cur = { start:p + i, end:p + i, lines:[] }; i++; cur.end = p + i; }
+    }
+    if(cur) hunks.push(cur);
+    return hunks;
+  }
+  function merge3(base, a, b){
+    var B = base.split("\n"), ha = diffHunks(B, a.split("\n")), hb = diffHunks(B, b.split("\n"));
+    var all = ha.concat(hb).sort(function(x, y){ return x.start - y.start || x.end - y.end; }), kept = [], maxEnd = -1, prev = null;
+    for(var k = 0; k < all.length; k++){
+      var h = all[k];
+      if(prev && h.start === prev.start && h.end === prev.end && h.lines.join("\n") === prev.lines.join("\n")) continue;
+      if(prev && (h.start < maxEnd || h.start === prev.start)) return null;
+      kept.push(h); prev = h; maxEnd = Math.max(maxEnd, h.end);
+    }
+    var out = B.slice();
+    for(k = kept.length - 1; k >= 0; k--) out.splice.apply(out, [kept[k].start, kept[k].end - kept[k].start].concat(kept[k].lines));
+    return out.join("\n");
+  }
+  window.__keepNotesMerge = merge3;
+
+  /* Sync dialog */
+  var dlg = $("syncDialog");
+  function openSync(){
+    closeMenu();
+    $("syncOwner").value = sync ? sync.owner : "";
+    $("syncRepo").value = sync ? sync.repo : "keep-notes-data";
+    $("syncPath").value = sync ? sync.path : "keep-notes.md";
+    $("syncToken").value = "";
+    $("syncToken").placeholder = token ? "Saved on this device" : "github_pat_…";
+    $("syncOff").hidden = !syncOn();
+    $("syncErr").hidden = true;
+    dlg.hidden = false; $("syncOwner").focus();
+  }
+  function closeSync(){ dlg.hidden = true; }
+  $("syncClose").addEventListener("click", closeSync);
+  dlg.addEventListener("click", function(e){ if(e.target === dlg) closeSync(); });
+  dlg.addEventListener("keydown", function(e){ if(e.key === "Escape") closeSync(); });
+  $("syncForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var owner = norm($("syncOwner").value), repo = norm($("syncRepo").value), path = norm($("syncPath").value).replace(/^\/+/, ""), t = $("syncToken").value.trim();
+    var err = $("syncErr");
+    if(!owner || !repo || !path){ err.textContent = "Fill in the username, repository and file name."; err.hidden = false; return; }
+    if(!t && !token){ err.textContent = "Paste your access token."; err.hidden = false; return; }
+    var changedTarget = !sync || sync.owner !== owner || sync.repo !== repo || sync.path !== path;
+    sync = { owner:owner, repo:repo, path:path }; lsSet("sync", sync);
+    if(t){ token = t; lsSet("token", t); }
+    if(changedTarget){ setBase(null, null); syncDirty = doc !== null; lsSet("syncDirty", syncDirty); }
+    $("syncConnect").disabled = true; err.hidden = true;
+    syncErr = ""; await syncNow();
+    $("syncConnect").disabled = false;
+    if(syncErr){ err.textContent = syncErr; err.hidden = false; return; }
+    closeSync(); flash("Sync is on");
+  });
+  $("syncOff").addEventListener("click", function(){
+    var b = this;
+    if(!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "Click again to turn off"; setTimeout(function(){ b.classList.remove("armed"); b.textContent = "Turn off sync"; }, 4000); return; }
+    sync = null; token = null; lsSet("sync", null); lsSet("token", null); setBase(null, null); syncErr = ""; syncDirty = false; lsSet("syncDirty", false);
+    closeSync(); updateSave(); flash("Sync turned off. Your notes stay on this device.");
+  });
+
+  document.addEventListener("visibilitychange", function(){ if(document.visibilityState === "visible") syncNow(); });
+  window.addEventListener("online", function(){ syncOffline = false; syncNow(); });
+  setInterval(function(){ if(document.visibilityState === "visible" && !syncBusy) syncNow(); }, 120000);
+
+  /* ---------- status line ---------- */
+  function time(d){ return new Date(d).toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }); }
+  function updateSave(){
+    var el = $("save"), state, html;
+    if(localErr){ state = "error"; html = "Couldn't save on this device. Use Menu › Download a copy now."; }
+    else if(syncOn()){
+      if(syncBusy){ state = "busy"; html = "Syncing…"; }
+      else if(syncErr){ state = "error"; html = "Sync problem: " + esc(syncErr) + ' <button type="button" data-act="settings">Sync settings</button>'; }
+      else if(syncOffline){ state = "local"; html = "Offline. Saved on this device and will sync when you're back online."; }
+      else if(syncDirty){ state = "busy"; html = "Waiting to sync…"; }
+      else { state = "ok"; html = "Synced" + (lastSync ? " at " + time(lastSync) : ""); }
+    }
+    else if(fileHandle && saveErr){ state = "error"; html = "Couldn't save to " + esc(fileHandle.name) + ": " + esc(saveErr) + ' <button type="button" data-act="retry">Try again</button>'; }
+    else if(fileHandle && !fileOk){ state = "local"; html = 'Saved on this device. <button type="button" data-act="reconnect">Reconnect ' + esc(fileHandle.name) + "</button>"; }
+    else if(fileHandle){ state = "ok"; html = "Saved to " + esc(fileHandle.name) + (lastSaved ? " at " + time(lastSaved) : ""); }
+    else { state = "local"; html = 'Saved on this device only. <button type="button" data-act="settings">Turn on sync</button>'; }
+    el.dataset.state = state; $("saveText").innerHTML = html;
+    $("mSyncNow").hidden = !syncOn();
+    $("mLink").hidden = !FS || !!fileHandle;
+    $("mUnlink").hidden = !fileHandle;
+  }
+  $("save").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-act]"); if(!b) return;
+    var a = b.dataset.act;
+    if(a === "settings") openSync(); else if(a === "reconnect") reconnectFile(); else if(a === "retry"){ saveErr = ""; writeFile(); }
+  });
+  var flashTimer = null;
+  function flash(msg){ var s = $("status"); s.textContent = msg; clearTimeout(flashTimer); flashTimer = setTimeout(function(){ if(s.textContent === msg) s.textContent = ""; }, 3500); }
+
+  /* ---------- rendering ---------- */
+  var io = null;
+  function render(){
+    sectionsEl.innerHTML = ""; nav.innerHTML = ""; sections = [];
+    if(doc === null){ renderWelcome(); return; }
+    parts = splitDoc(doc);
+    var start = 0;
+    if(!/^## /.test(parts[0])){ renderIntro(parts[0]); start = 1; } else renderIntro("");
+    var used = {}, groups = [];
+    for(var i = start; i < parts.length; i++) buildSection(i, used, groups);
+    var add = document.createElement("div"); add.className = "add-sec";
+    var ab = document.createElement("button"); ab.type = "button"; ab.className = "tool"; ab.textContent = "+ Add a section";
+    ab.addEventListener("click", addSection); add.append(ab); sectionsEl.append(add);
+    buildRail(groups); updateStats();
+    sections.forEach(function(s){ setOpen(s, openSet.has(s.id), false); });
+    if(!todoView.hidden) renderTodos();
+    if(q.value.trim().length >= 2) runSearch();
+    if(io) io.disconnect();
+    if("IntersectionObserver" in window){
+      io = new IntersectionObserver(function(entries){
+        entries.forEach(function(en){ if(en.isIntersecting) nav.querySelectorAll("a[data-id]").forEach(function(a){ a.classList.toggle("active", a.dataset.id === en.target.id); }); });
+      }, { rootMargin:"-30% 0px -60% 0px" });
+      sections.forEach(function(s){ io.observe(s.el); });
+    }
+  }
+  function renderWelcome(){
+    $("docTitle").textContent = "Keep Notes"; $("lede").hidden = true; $("legend").hidden = true; $("stats").innerHTML = "";
+    var w = document.createElement("div"); w.className = "welcome";
+    w.innerHTML = "<h2>No notes on this device yet</h2><p>If your notes already sync from another device, turn on sync here with the same details. Otherwise, open your keep-notes.md file to start.</p>";
+    var acts = document.createElement("div"); acts.className = "actions";
+    var b1 = document.createElement("button"); b1.type = "button"; b1.className = "btn"; b1.textContent = "Turn on sync"; b1.addEventListener("click", openSync);
+    var b2 = document.createElement("button"); b2.type = "button"; b2.className = "tool"; b2.textContent = "Open a notes file"; b2.addEventListener("click", openFile);
+    acts.append(b1, b2); w.append(acts); sectionsEl.append(w);
+  }
+  function renderIntro(text){
+    var d = parse(text), lede = "", legend = "";
+    var h1 = d.querySelector("h1");
+    $("docTitle").textContent = h1 ? norm(h1.textContent) : "Notes";
+    Array.prototype.forEach.call(d.children, function(n){
+      if(n.tagName === "P" && !lede && !n.querySelector("strong:only-child")) lede = n.innerHTML;
+      else if(n.tagName === "UL" && !legend) legend = n.innerHTML;
+    });
+    $("lede").innerHTML = lede; $("lede").hidden = !lede;
+    $("legend").innerHTML = legend; $("legend").hidden = !legend;
+  }
+
+  function buildSection(pi, used, groups){
+    var d = parse(parts[pi]), meta = readMeta(parts[pi]);
+    var h2 = d.firstElementChild && d.firstElementChild.tagName === "H2" ? d.firstElementChild : null;
+    var text = h2 ? norm(h2.textContent) : "Untitled";
+    var id = h2 ? slug(h2) : "section";
+    if(id === "todos") id = "todos-section";
+    if(used[id]){ var n = 2; while(used[id + "-" + n]) n++; id = id + "-" + n; }
+    used[id] = true;
+    var m = text.match(/^(\d+)\.\s+(.*)$/);
+    var num = m ? +m[1] : null, title = m ? m[2] : text;
+    var group = typeof meta.group === "string" ? meta.group : null, gi = -1;
+    if(group){ gi = groups.indexOf(group); if(gi < 0){ groups.push(group); gi = groups.length - 1; } }
+    var s = makeSection({ id:id, num:num, title:title, group:group, gi:gi, pi:pi, priv:!!meta["private"], blurb:typeof meta.blurb === "string" ? meta.blurb : "", short:typeof meta.short === "string" ? meta.short : "", label:typeof meta.label === "string" ? meta.label : "" });
+    if(h2) h2.remove();
+    Array.prototype.slice.call(d.children).forEach(function(node){ if(node.tagName !== "HR") s.body.append(node); });
+    decorate(s);
+    sections.push(s);
+  }
+
+  function makeSection(o){
+    var sec = document.createElement("section");
+    sec.className = "sec" + (o.priv ? " private" : ""); sec.id = o.id;
+    if(o.gi >= 0) sec.style.setProperty("--gc", "var(--g" + (o.gi % 5 + 1) + ")");
+    var h = document.createElement("h2"); h.className = "sec-h";
+    var b = document.createElement("button"); b.type = "button"; b.className = "sec-head";
+    b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", o.id + "-body");
+    var numEl = document.createElement("span");
+    numEl.className = "sec-num" + (o.num ? "" : " word");
+    numEl.textContent = o.num ? String(o.num) : (o.label || "");
+    var titles = document.createElement("span"); titles.className = "sec-titles";
+    var t = document.createElement("span"); t.className = "sec-title"; t.textContent = o.title;
+    var bl = document.createElement("span"); bl.className = "sec-blurb"; bl.textContent = o.blurb; bl.hidden = !o.blurb;
+    titles.append(t, bl);
+    var meta = document.createElement("span"); meta.className = "sec-meta";
+    var pill = document.createElement("span"); pill.className = "pill"; pill.hidden = true;
+    var chev = document.createElement("span"); chev.className = "chev"; chev.setAttribute("aria-hidden", "true");
+    meta.append(pill, chev);
+    b.append(numEl, titles, meta); h.append(b);
+    var body = document.createElement("div"); body.className = "sec-body prose"; body.id = o.id + "-body"; body.hidden = true;
+    var tools = document.createElement("div"); tools.className = "sec-tools";
+    var eb = document.createElement("button"); eb.type = "button"; eb.className = "tool small"; eb.textContent = "Edit section";
+    tools.append(eb); body.append(tools);
+    sec.append(h, body);
+    var s = Object.assign({ el:sec, head:b, body:body, pill:pill, todos:[], open:false }, o);
+    eb.addEventListener("click", function(){ editSection(s); });
+    if(o.priv){
+      var veil = document.createElement("div"); veil.className = "veil"; veil.hidden = true;
+      veil.innerHTML = "<p>This section is marked private. It stays hidden until you choose to open it, and it is left out of search and the to-do list until then.</p>";
+      var rb = document.createElement("button"); rb.type = "button"; rb.className = "btn"; rb.textContent = "Show this section";
+      rb.addEventListener("click", function(){ setRevealed(true); });
+      veil.append(rb); sec.append(veil); s.veil = veil;
+      var lock = document.createElement("button"); lock.type = "button"; lock.className = "tool small"; lock.textContent = "Hide this section again";
+      lock.addEventListener("click", function(){ setRevealed(false); });
+      tools.prepend(lock);
+    }
+    b.addEventListener("click", function(){ setOpen(s, !s.open); });
+    sectionsEl.append(sec);
+    return s;
+  }
+  function locked(s){ return s.priv && !revealed; }
+
+  function decorate(s){
+    var body = s.body;
+    body.querySelectorAll("table").forEach(function(t){ var w = document.createElement("div"); w.className = "table-wrap"; t.parentNode.insertBefore(w, t); w.append(t); });
+    body.querySelectorAll("h3, h4").forEach(function(h){ h.id = s.id + "--" + slug(h); });
+    body.querySelectorAll('a[href^="http"]').forEach(function(a){ a.target = "_blank"; a.rel = "noopener"; });
+    if(s.id === "start-here"){ var ul = body.querySelector("ul"); if(ul) ul.classList.add("cards"); }
+
+    body.querySelectorAll("p, li, blockquote, tr").forEach(function(el){
+      var first = el.firstChild;
+      while(first && ((first.nodeType === 3 && !first.nodeValue.trim()) || (first.nodeType === 1 && first.tagName === "INPUT"))) first = first.nextSibling;
+      while(first && first.nodeType === 1 && /^(STRONG|EM|P|TD)$/.test(first.tagName) && first.firstElementChild && first.firstChild === first.firstElementChild) first = first.firstElementChild;
+      if(first && first.nodeType === 1 && first.classList.contains("added-tag")) el.classList.add("is-added");
+    });
+    var hideLevel = 0;
+    Array.prototype.slice.call(body.children).forEach(function(el){
+      var lvl = /^H([3-4])$/.test(el.tagName) ? +el.tagName[1] : 0;
+      if(lvl && hideLevel && lvl <= hideLevel) hideLevel = 0;
+      if(lvl && !hideLevel && el.querySelector(".added-tag")) hideLevel = lvl;
+      if(hideLevel) el.classList.add("is-added");
+    });
+
+    var inputs = body.querySelectorAll('input[type="checkbox"]');
+    var ok = inputs.length === taskLines(parts[s.pi]).length;
+    inputs.forEach(function(inp, k){
+      var li = inp.closest("li");
+      if(li) li.classList.add("task");
+      inp.dataset.key = s.pi + ":" + k;
+      inp.setAttribute("aria-label", norm((li || inp.parentElement).textContent).slice(0, 90));
+      if(ok){ inp.disabled = false; inp.removeAttribute("disabled"); }
+      else inp.title = "Use Edit section to change this item";
+      if(li) li.classList.toggle("done", inp.checked);
+    });
+
+    var zone = false, label = "";
+    Array.prototype.slice.call(body.children).forEach(function(el){
+      if(el.tagName === "H3"){ zone = /^open to-dos/i.test(norm(el.textContent)); label = ""; return; }
+      if(!zone) return;
+      if(el.tagName === "P" || el.tagName === "H4"){ label = el.innerHTML; return; }
+      if(el.tagName === "UL" || el.tagName === "OL"){
+        var items = [];
+        Array.prototype.slice.call(el.children).forEach(function(li){
+          var inp = li.querySelector(':scope > input[type="checkbox"]');
+          if(inp) items.push({ key:inp.dataset.key, li:li, inp:inp });
+        });
+        if(items.length) s.todos.push({ label:label, items:items });
+        label = "";
+      }
+    });
+    updatePill(s);
+  }
+
+  function setOpen(s, open, persistIt){
+    s.open = open;
+    s.head.setAttribute("aria-expanded", String(open));
+    s.el.classList.toggle("is-open", open);
+    s.body.hidden = !open || locked(s) || !!s.editor;
+    if(s.veil) s.veil.hidden = !open || !locked(s) || !!s.editor;
+    if(persistIt !== false){ if(open) openSet.add(s.id); else openSet.delete(s.id); lsSet("open", Array.from(openSet)); }
+  }
+  function setRevealed(v){
+    revealed = v; ssSet("private", v ? "1" : null);
+    sections.forEach(function(s){ if(s.priv){ setOpen(s, true, false); updatePill(s); } });
+    updateRail(); updateStats();
+    if(!todoView.hidden) renderTodos();
+    if(q.value.trim().length >= 2) runSearch();
+  }
+
+  /* ---------- ticks ---------- */
+  function setTask(key, val){
+    var bits = key.split(":"), pi = +bits[0], k = +bits[1];
+    var lines = parts[pi].split("\n"), ln = taskLines(parts[pi])[k];
+    if(ln === undefined) return;
+    lines[ln] = lines[ln].replace(/\[[ xX]\]/, val ? "[x]" : "[ ]");
+    pushUndo();
+    parts[pi] = lines.join("\n"); doc = parts.join("");
+    persist();
+    document.querySelectorAll('input[data-key="' + key + '"]').forEach(function(i){ i.checked = val; var li = i.closest("li"); if(li) li.classList.toggle("done", val); });
+    sections.forEach(updatePill); updateRail(); updateStats(); updateTodoCounts();
+  }
+  document.addEventListener("change", function(e){ var t = e.target; if(t.matches && t.matches('input[type="checkbox"][data-key]')) setTask(t.dataset.key, t.checked); });
+
+  function todoCounts(s){ var t = 0, o = 0; s.todos.forEach(function(g){ g.items.forEach(function(it){ t++; if(!it.inp.checked) o++; }); }); return { total:t, open:o }; }
+  function updatePill(s){
+    var c = todoCounts(s);
+    if(locked(s)){ s.pill.hidden = false; s.pill.className = "pill lock"; s.pill.textContent = "private"; return; }
+    if(!c.total){ s.pill.hidden = true; return; }
+    s.pill.hidden = false; s.pill.className = "pill" + (c.open ? "" : " zero");
+    s.pill.textContent = c.open ? c.open + " open" : "all done";
+  }
+
+  /* ---------- editing ---------- */
+  function editSection(s){
+    if(s.editor) return;
+    var original = stripTrail(parts[s.pi]);
+    var ed = document.createElement("div"); ed.className = "editor";
+    var hint = document.createElement("p"); hint.className = "hint";
+    hint.innerHTML = "Markdown. Keep the first line as <code>## Title</code>. To-dos are <code>- [ ] item</code>; tables use <code>| a | b |</code>. The <code>&lt;!-- keep: … --&gt;</code> line sets the group, short name, summary and privacy. Ctrl+S saves.";
+    var ta = document.createElement("textarea"); ta.id = "edit-" + s.id; ta.value = original; ta.spellcheck = true; ta.setAttribute("aria-label", "Edit " + s.title);
+    var err = document.createElement("p"); err.className = "err"; err.hidden = true;
+    var actions = document.createElement("div"); actions.className = "editor-actions";
+    var save = document.createElement("button"); save.type = "button"; save.className = "btn"; save.textContent = "Save section";
+    var cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "tool"; cancel.textContent = "Cancel";
+    var sp = document.createElement("span"); sp.className = "spacer";
+    var del = document.createElement("button"); del.type = "button"; del.className = "tool danger"; del.textContent = "Delete section";
+    actions.append(save, cancel, sp, del);
+    ed.append(hint, ta, err, actions);
+    s.editor = ed;
+    setOpen(s, true);
+    s.el.append(ed);
+    ta.style.height = Math.min(Math.max(ta.scrollHeight + 4, 320), window.innerHeight * 0.75) + "px";
+    ta.focus({ preventScroll:true }); ta.setSelectionRange(0, 0); ta.scrollTop = 0;
+    s.el.scrollIntoView({ block:"start" });
+
+    function close(){ ed.remove(); s.editor = null; setOpen(s, true, false); }
+    function doSave(){
+      var t = ta.value.replace(/\r\n?/g, "\n").replace(/\s+$/, "");
+      if(!/^## \S/.test(t)){ err.textContent = "The first line needs to start with “## ” followed by the section title."; err.hidden = false; return; }
+      if(t === original){ close(); return; }
+      var np = parts.slice(); np[s.pi] = t + sepFor(s.pi, np.length);
+      var pi = s.pi;
+      change(np.join(""), function(){ reopenAt(pi); flash("Section saved"); });
+    }
+    save.addEventListener("click", doSave);
+    cancel.addEventListener("click", close);
+    del.addEventListener("click", function(){
+      if(!del.classList.contains("armed")){ del.classList.add("armed"); del.textContent = "Click again to delete"; setTimeout(function(){ del.classList.remove("armed"); del.textContent = "Delete section"; }, 4000); return; }
+      var np = parts.slice(); np.splice(s.pi, 1);
+      if(np.length) np[np.length - 1] = stripTrail(np[np.length - 1]) + "\n";
+      change(np.join(""), function(){ flash("Section deleted. Undo brings it back."); });
+    });
+    ta.addEventListener("keydown", function(e){
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s"){ e.preventDefault(); doSave(); }
+      else if(e.key === "Escape" && ta.value.replace(/\s+$/, "") === original){ e.preventDefault(); close(); }
+    });
+  }
+  function reopenAt(pi){
+    var s = sections.filter(function(x){ return x.pi === pi; })[0];
+    if(!s) return;
+    setOpen(s, true);
+    requestAnimationFrame(function(){ s.el.scrollIntoView({ block:"start" }); });
+  }
+  function addSection(){
+    closeMenu();
+    if(doc === null) return;
+    var max = 0; sections.forEach(function(s){ if(s.num && s.num > max) max = s.num; });
+    var text = "## " + (max + 1) + ". New section\n<!-- keep: blurb: A short summary of this section. -->\n\nWrite your notes here.\n\n### Open to-dos from these notes\n\n- [ ] First thing to do";
+    var np = parts.slice();
+    var idx = sections.filter(function(s){ return s.label && /index/i.test(s.label); }).map(function(s){ return s.pi; })[0];
+    if(idx === undefined){ np[np.length - 1] = stripTrail(np[np.length - 1]) + "\n\n---\n\n"; np.push(text + "\n"); idx = np.length - 1; }
+    else np.splice(idx, 0, text + "\n\n---\n\n");
+    var at = idx;
+    if(!todoView.hidden) showView("read");
+    change(np.join(""), function(){ var s = sections.filter(function(x){ return x.pi === at; })[0]; if(s) editSection(s); });
+  }
+  function addTodo(pi, text){
+    text = norm(text); if(!text) return;
+    var p = parts[pi], body = stripTrail(p), lines = body.split("\n"), item = "- [ ] " + text;
+    var h = -1; lines.forEach(function(l, i){ if(h < 0 && /^###\s+open to-dos/i.test(l)) h = i; });
+    if(h < 0){ body += "\n\n### Open to-dos from these notes\n\n" + item; }
+    else {
+      var end = lines.length; for(var j = h + 1; j < lines.length; j++){ if(/^#{2,3}\s/.test(lines[j])){ end = j; break; } }
+      var last = -1; for(j = h + 1; j < end; j++){ if(TASK_RE.test(lines[j])) last = j; }
+      if(last < 0) lines.splice(h + 1, 0, "", item); else lines.splice(last + 1, 0, item);
+      body = lines.join("\n");
+    }
+    var np = parts.slice(); np[pi] = body + sepFor(pi, np.length);
+    change(np.join(""), function(){ flash("To-do added"); });
+  }
+
+  var fullEd = $("fullEditor"), fullText = $("fullText");
+  function openFull(){ closeMenu(); if(doc === null) return; fullText.value = doc; fullEd.hidden = false; document.body.style.overflow = "hidden"; fullText.focus(); fullText.setSelectionRange(0, 0); fullText.scrollTop = 0; }
+  function closeFull(){ fullEd.hidden = true; document.body.style.overflow = ""; }
+  function saveFull(){ var v = fullText.value.replace(/\s+$/, "") + "\n"; closeFull(); change(v, function(){ flash("Document saved"); }); }
+  $("fullSave").addEventListener("click", saveFull);
+  $("fullCancel").addEventListener("click", closeFull);
+  fullText.addEventListener("keydown", function(e){
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s"){ e.preventDefault(); saveFull(); }
+    else if(e.key === "Escape"){ e.preventDefault(); closeFull(); }
+  });
+
+  /* ---------- rail ---------- */
+  var railToggle = $("railToggle"), rail = $("rail");
+  function railItem(s){
+    var li = document.createElement("li"), a = document.createElement("a");
+    a.href = "#" + s.id; a.dataset.id = s.id;
+    a.innerHTML = '<span class="n"></span><span class="t"></span><span class="c"></span>';
+    a.querySelector(".n").textContent = s.num || "";
+    a.querySelector(".t").textContent = s.short || s.title;
+    li.append(a); return li;
+  }
+  function buildRail(groups){
+    function box(list, label, gi){
+      if(!list.length) return;
+      var b = document.createElement("div"); b.className = "rail-group";
+      if(label){ b.style.setProperty("--gc", "var(--g" + (gi % 5 + 1) + ")"); var h = document.createElement("h2"); h.innerHTML = "<i></i>"; h.append(label); b.append(h); }
+      var ul = document.createElement("ul"); list.forEach(function(s){ ul.append(railItem(s)); }); b.append(ul); nav.append(b);
+    }
+    var firstGrouped = sections.findIndex(function(s){ return s.group; });
+    var before = firstGrouped < 0 ? sections.filter(function(s){ return !s.group; }) : sections.slice(0, firstGrouped).filter(function(s){ return !s.group; });
+    var after = firstGrouped < 0 ? [] : sections.slice(firstGrouped).filter(function(s){ return !s.group; });
+    box(before);
+    groups.forEach(function(g, gi){ box(sections.filter(function(s){ return s.group === g; }), g, gi); });
+    box(after);
+    var add = document.createElement("button"); add.type = "button"; add.className = "add-link"; add.textContent = "+ Add a section";
+    add.addEventListener("click", addSection); nav.append(add);
+    updateRail();
+  }
+  function updateRail(){
+    sections.forEach(function(s){
+      var a = nav.querySelector('a[data-id="' + CSS.escape(s.id) + '"]'); if(!a) return;
+      var c = todoCounts(s); a.querySelector(".c").textContent = locked(s) ? "" : (c.open || "");
+    });
+  }
+  railToggle.addEventListener("click", function(){ var o = !rail.classList.contains("open"); rail.classList.toggle("open", o); railToggle.setAttribute("aria-expanded", String(o)); });
+  nav.addEventListener("click", function(e){ if(e.target.closest("a, button")){ rail.classList.remove("open"); railToggle.setAttribute("aria-expanded", "false"); } });
+
+  function visibleCounts(){ var t = 0, o = 0; sections.forEach(function(s){ if(locked(s)) return; var c = todoCounts(s); t += c.total; o += c.open; }); return { total:t, open:o }; }
+  function updateStats(){
+    var c = visibleCounts(), numbered = sections.filter(function(s){ return s.num; }).length;
+    $("stats").innerHTML = "<span><b>" + numbered + "</b>sections</span><span><b>" + c.open + "</b>open to-dos</span><span><b>" + (c.total - c.open) + "</b>ticked</span>";
+  }
+
+  /* ---------- to-do view ---------- */
+  function renderTodos(){
+    todoView.innerHTML = "";
+    if(doc === null){ todoView.innerHTML = '<p class="muted">No notes on this device yet.</p>'; return; }
+    var head = document.createElement("div"); head.className = "todo-head";
+    head.innerHTML = '<h2>Open to-dos</h2><div class="bar" aria-hidden="true"><span id="todoBar"></span></div>' +
+      '<label class="switch" for="hideDone"><input type="checkbox" id="hideDone"> Hide ticked items</label>';
+    todoView.append(head);
+    var hd = head.querySelector("#hideDone"); hd.checked = lsGet("hideDone", false); document.body.classList.toggle("hide-done", hd.checked);
+    hd.addEventListener("change", function(){ lsSet("hideDone", hd.checked); document.body.classList.toggle("hide-done", hd.checked); });
+
+    var form = document.createElement("form"); form.className = "quick-add";
+    form.innerHTML = '<input id="newTodo" type="text" placeholder="Add a to-do…" aria-label="New to-do" autocomplete="off"><select id="newTodoSec" aria-label="Section"></select><button class="btn" type="submit">Add</button>';
+    var sel = form.querySelector("select");
+    sections.forEach(function(s){ if(locked(s) || !s.num) return; var o = document.createElement("option"); o.value = String(s.pi); o.textContent = s.num + ". " + (s.short || s.title); sel.append(o); });
+    var lastSec = lsGet("lastTodoSec", null); if(lastSec !== null && sel.querySelector('option[value="' + lastSec + '"]')) sel.value = lastSec;
+    form.addEventListener("submit", function(e){ e.preventDefault(); var v = form.querySelector("input").value; if(!norm(v) || !sel.value) return; lsSet("lastTodoSec", sel.value); addTodo(+sel.value, v); var ni = $("newTodo"); if(ni) ni.focus(); });
+    todoView.append(form);
+
+    var p = document.createElement("p"); p.className = "muted"; p.id = "todoSummary"; todoView.append(p);
+    sections.forEach(function(s){
+      if(!s.todos.length) return;
+      var card = document.createElement("article"); card.className = "todo-sec";
+      if(s.gi >= 0) card.style.setProperty("--gc", "var(--g" + (s.gi % 5 + 1) + ")");
+      var hdr = document.createElement("header");
+      var h3 = document.createElement("h3"); var a = document.createElement("a"); a.href = "#" + s.id; a.textContent = (s.num ? s.num + ". " : "") + s.title; h3.append(a);
+      var cnt = document.createElement("span"); cnt.className = "count"; cnt.dataset.sec = s.id;
+      hdr.append(h3, cnt); card.append(hdr);
+      if(locked(s)){
+        var lp = document.createElement("p"); lp.className = "muted"; lp.textContent = "Hidden while the private section is closed. ";
+        var rb = document.createElement("button"); rb.type = "button"; rb.className = "tool small"; rb.textContent = "Show private to-dos";
+        rb.addEventListener("click", function(){ setRevealed(true); });
+        lp.append(rb); card.append(lp); todoView.append(card); return;
+      }
+      s.todos.forEach(function(g){
+        if(g.label){ var h4 = document.createElement("h4"); h4.innerHTML = g.label; card.append(h4); }
+        var ul = document.createElement("ul");
+        g.items.forEach(function(it){ var li = it.li.cloneNode(true); li.querySelectorAll("mark.hit").forEach(function(m){ m.replaceWith(document.createTextNode(m.textContent)); }); ul.append(li); });
+        card.append(ul);
+      });
+      todoView.append(card);
+    });
+    updateTodoCounts();
+  }
+  function updateTodoCounts(){
+    var c = visibleCounts();
+    var bar = $("todoBar"); if(bar) bar.style.width = (c.total ? Math.round((c.total - c.open) / c.total * 100) : 0) + "%";
+    var sum = $("todoSummary"); if(sum) sum.textContent = c.open + " open of " + c.total + ", from the “Open to-dos” list at the end of each section. Ticking here also ticks the item in the notes.";
+    todoView.querySelectorAll(".count[data-sec]").forEach(function(el){
+      var s = sections.filter(function(x){ return x.id === el.dataset.sec; })[0]; if(!s) return;
+      var cc = todoCounts(s); el.textContent = locked(s) ? "" : (cc.total - cc.open) + " of " + cc.total + " ticked";
+    });
+  }
+
+  /* ---------- views, search, misc ---------- */
+  var tabRead = $("tabRead"), tabTodo = $("tabTodo");
+  function showView(v){
+    var todo = v === "todo";
+    readView.hidden = todo; todoView.hidden = !todo;
+    tabRead.setAttribute("aria-pressed", String(!todo)); tabTodo.setAttribute("aria-pressed", String(todo));
+    $("expandAll").hidden = todo; $("collapseAll").hidden = todo;
+    if(todo) renderTodos();
+  }
+  tabRead.addEventListener("click", function(){ if(location.hash === "#todos"){ try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){ location.hash = ""; } } showView("read"); });
+  tabTodo.addEventListener("click", function(){ location.hash = "todos"; });
+  $("expandAll").addEventListener("click", function(){ sections.forEach(function(s){ setOpen(s, true); }); });
+  $("collapseAll").addEventListener("click", function(){ sections.forEach(function(s){ if(!s.editor) setOpen(s, false); }); });
+  $("undoBtn").addEventListener("click", doUndo);
+
+  var own = $("ownWords");
+  own.checked = lsGet("ownWords", false); document.body.classList.toggle("own-words", own.checked);
+  own.addEventListener("change", function(){ lsSet("ownWords", own.checked); document.body.classList.toggle("own-words", own.checked); });
+
+  var timer = null;
+  function clearMarks(){ document.querySelectorAll("mark.hit").forEach(function(m){ var p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); }); }
+  function markIn(root, re){
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode:function(n){ return n.parentElement.closest(".sec-tools") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } });
+    var nodes = [], count = 0; while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function(tn){
+      var txt = tn.nodeValue; re.lastIndex = 0; if(!re.test(txt)) return; re.lastIndex = 0;
+      var frag = document.createDocumentFragment(), last = 0, m;
+      while((m = re.exec(txt))){ frag.append(txt.slice(last, m.index)); var mk = document.createElement("mark"); mk.className = "hit"; mk.textContent = m[0]; frag.append(mk); last = m.index + m[0].length; count++; }
+      frag.append(txt.slice(last)); tn.parentNode.replaceChild(frag, tn);
+    });
+    return count;
+  }
+  function runSearch(){
+    clearMarks();
+    var val = q.value.trim();
+    if(val.length < 2){ sections.forEach(function(s){ s.el.hidden = false; setOpen(s, openSet.has(s.id) || !!s.editor, false); }); $("status").textContent = ""; return; }
+    if(!todoView.hidden) showView("read");
+    var re = new RegExp(val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), total = 0, secs = 0, skipped = false;
+    sections.forEach(function(s){
+      if(locked(s)){ s.el.hidden = true; skipped = true; return; }
+      var n = markIn(s.body, re) + markIn(s.head.querySelector(".sec-title"), re);
+      s.el.hidden = n === 0 && !s.editor;
+      if(n){ secs++; total += n; setOpen(s, true, false); }
+    });
+    $("status").textContent = total ? total + (total === 1 ? " match" : " matches") + " in " + secs + (secs === 1 ? " section" : " sections") + (skipped ? " (private section not searched)" : "") : "No matches for “" + val + "”";
+  }
+  q.addEventListener("input", function(){ clearTimeout(timer); timer = setTimeout(runSearch, 180); });
+  q.addEventListener("keydown", function(e){ if(e.key === "Escape"){ q.value = ""; runSearch(); } });
+
+  function goHash(){
+    var id = decodeURIComponent(location.hash.slice(1));
+    if(id === "todos"){ showView("todo"); window.scrollTo(0, 0); return; }
+    showView("read");
+    if(!id) return;
+    var el = document.getElementById(id); if(!el) return;
+    var secEl = el.closest(".sec"), s = secEl && sections.filter(function(x){ return x.el === secEl; })[0];
+    if(s){ secEl.hidden = false; setOpen(s, true); }
+    requestAnimationFrame(function(){ el.scrollIntoView({ block:"start" }); });
+  }
+  window.addEventListener("hashchange", goHash);
+
+  var menu = $("fileMenu");
+  function closeMenu(){ menu.open = false; }
+  document.addEventListener("click", function(e){ if(menu.open && !menu.contains(e.target)) closeMenu(); });
+  $("mSync").addEventListener("click", openSync);
+  $("mSyncNow").addEventListener("click", function(){ closeMenu(); syncNow(); });
+  $("mLink").addEventListener("click", linkNewFile);
+  $("mOpen").addEventListener("click", openFile);
+  $("mDownload").addEventListener("click", download);
+  $("mUnlink").addEventListener("click", unlink);
+  $("mEditAll").addEventListener("click", openFull);
+  $("mAddSec").addEventListener("click", addSection);
+
+  document.addEventListener("keydown", function(e){
+    var inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName);
+    if(!inField && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z"){ e.preventDefault(); doUndo(); }
+    if(!inField && e.key === "/"){ e.preventDefault(); q.focus(); }
+  });
+
+  /* ---------- start ---------- */
+  render();
+  updateSave();
+  if(lsGet("conflictLocal", null)){ $("conflictText").textContent = "An earlier sync clash left this device's version waiting. The synced version is shown."; $("conflict").hidden = false; }
+  if(location.hash) goHash();
+  syncNow();
+  if(FS){
+    idbGet("handle").then(async function(h){
+      if(!h) return;
+      fileHandle = h;
+      try{ fileOk = (await h.queryPermission({ mode:"readwrite" })) === "granted"; }catch(e){ fileOk = false; }
+      updateSave();
+    }).catch(function(){});
+  }
+  if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
