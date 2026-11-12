@@ -639,14 +639,16 @@ body.hide-done .todo-sec li.task.done{display:none}
   var dlg = $("syncDialog");
   function openSync(){
     closeMenu();
-    $("syncOwner").value = sync ? sync.owner : "";
+    // When hosted on GitHub Pages, the account that hosts the app is the likely owner of the notes repository.
+    var hostOwner = (location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i) || [])[1] || "";
+    $("syncOwner").value = sync ? sync.owner : hostOwner;
     $("syncRepo").value = sync ? sync.repo : "keep-notes-data";
     $("syncPath").value = sync ? sync.path : "keep-notes.md";
     $("syncToken").value = "";
     $("syncToken").placeholder = token ? "Saved on this device" : "github_pat_…";
     $("syncOff").hidden = !syncOn();
     $("syncErr").hidden = true;
-    dlg.hidden = false; $("syncOwner").focus();
+    dlg.hidden = false; ($("syncOwner").value ? $("syncToken") : $("syncOwner")).focus();
   }
   function closeSync(){ dlg.hidden = true; }
   $("syncClose").addEventListener("click", closeSync);
