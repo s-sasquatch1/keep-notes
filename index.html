@@ -170,6 +170,32 @@ h1.title{font:700 clamp(28px,4.4vw,44px)/1.08 var(--font-display);letter-spacing
 .field small{font-weight:400;color:var(--muted)}
 .dialog .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}
 .dialog .actions .spacer{flex:1}
+.check{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{accent-color:var(--accent);width:17px;height:17px;margin:2px 0 0;flex:none}
+
+/* Voice notes */
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:15;width:62px;height:62px;border-radius:50%;
+  border:0;background:var(--accent);color:var(--on-accent);box-shadow:0 6px 18px rgba(0,0,0,.28);cursor:pointer;display:grid;place-items:center}
+.fab svg{width:27px;height:27px}
+.voice .live{display:flex;align-items:center;gap:10px;font:500 13px var(--font-mono);color:var(--muted);min-height:20px}
+.voice .live i{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
+.voice .live[data-state="on"] i{background:var(--danger);animation:vpulse 1.1s ease-in-out infinite}
+.voice .live[data-state="busy"] i{background:var(--accent);animation:vpulse 1.1s ease-in-out infinite}
+@keyframes vpulse{50%{opacity:.25}}
+@media (prefers-reduced-motion: reduce){.voice .live i{animation:none!important}}
+.voice textarea,.ritem textarea{width:100%;font:16px/1.5 var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;resize:vertical}
+.voice #vText{min-height:150px}
+.voice .big{font-size:15px;padding:11px 16px}
+.review h3{font:600 12px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:8px 0 0}
+.ritem{border:1px solid var(--line);border-left:4px solid var(--gc,var(--line));border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.ritem.off{opacity:.55}
+.ritem .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ritem select,.ritem input[type=text],.ritem input[type=date],.ritem input[type=time]{font:15px var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.ritem input[type=text]{flex:1 1 180px}
+.ritem select.sec-pick{flex:1 1 160px}
+.ritem textarea{min-height:60px;font-size:15px}
+.rem-actions{display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle}
+.prose li.task .rem-actions .tool{padding:2px 8px;font-size:12px}
 
 /* Prose */
 .prose{font-size:15px}
@@ -305,6 +331,8 @@ body.hide-done .todo-sec li.task.done{display:none}
           <button type="button" id="mLink" role="menuitem" hidden>Also save to a file…<small>Keep a .md file on this computer up to date</small></button>
           <button type="button" id="mUnlink" role="menuitem" hidden>Stop saving to the file<small>The file stays as it is</small></button>
           <hr>
+          <button type="button" id="mVoice" role="menuitem">Voice notes settings…<small>Claude key, quick start, listening on open</small></button>
+          <hr>
           <button type="button" id="mEditAll" role="menuitem">Edit everything<small>The whole document as one text</small></button>
           <button type="button" id="mAddSec" role="menuitem">Add a section<small>A new numbered section with a to-do list</small></button>
         </div>
@@ -359,6 +387,59 @@ body.hide-done .todo-sec li.task.done{display:none}
       <button class="tool" type="button" id="syncClose">Close</button>
       <span class="spacer"></span>
       <button class="tool danger" type="button" id="syncOff" hidden>Turn off sync</button>
+    </div>
+  </form>
+</div>
+
+<button class="fab" type="button" id="voiceFab" aria-label="Record a voice note" title="Record a voice note" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
+</button>
+
+<div class="dialog-back" id="voiceDialog" hidden>
+  <div class="dialog voice" role="dialog" aria-modal="true" aria-labelledby="voiceTitle">
+    <h2 id="voiceTitle">Voice note</h2>
+    <div id="vCapture">
+      <div class="live" id="vLive" data-state="off" role="status" aria-live="polite"><i></i><span id="vLiveText">Not listening</span></div>
+      <textarea id="vText" spellcheck="true" aria-label="What you said" placeholder="Speak, or type here. You can fix any misheard words before sorting."></textarea>
+      <p class="err" id="vErr" hidden></p>
+      <div class="actions">
+        <button class="btn big" type="button" id="vSort">Sort it</button>
+        <button class="tool big" type="button" id="vMic">Start listening</button>
+        <span class="spacer"></span>
+        <button class="tool" type="button" id="vInbox">Save to Inbox</button>
+        <button class="tool" type="button" id="vCancel">Cancel</button>
+      </div>
+    </div>
+    <div class="review" id="vReview" hidden>
+      <p id="vSummary"></p>
+      <div id="vItems"></div>
+      <div id="vAlarms"></div>
+      <div id="vEvents"></div>
+      <p class="err" id="vSaveErr" hidden></p>
+      <div class="actions">
+        <button class="btn big" type="button" id="vSave">Save to notes</button>
+        <button class="tool" type="button" id="vBack">Back to the text</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-back" id="voiceSetDialog" hidden>
+  <form class="dialog" id="voiceSetForm" autocomplete="off">
+    <h2>Voice notes</h2>
+    <p>Tap the microphone button, talk, then tap <b>Sort it</b>. Claude splits what you said into notes and to-dos for the right sections, and picks out alarms and calendar events. You check everything before it's saved.</p>
+    <label class="field" for="claudeKey">Claude API key
+      <input id="claudeKey" type="password" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…">
+      <small>Create one at console.anthropic.com under API keys. It is stored only on this device and is used only to send each voice note, with your section names, to Claude. Leave blank to keep the saved one.</small>
+    </label>
+    <label class="check"><input type="checkbox" id="autoVoice"> <span>Start listening as soon as the app opens<br><small class="muted">Also when you come back to it after more than a minute.</small></span></label>
+    <p><b>Quick start.</b> Long-press the Notes icon on your home screen and drag <b>Record</b> onto the home screen for a one-tap recording button. To open the app with the side button: Settings › Advanced features › Side button › Double press › Open app › Notes.</p>
+    <p class="err" id="voiceSetErr" hidden></p>
+    <div class="actions">
+      <button class="btn" type="submit">Save</button>
+      <button class="tool" type="button" id="voiceSetClose">Close</button>
+      <span class="spacer"></span>
+      <button class="tool danger" type="button" id="claudeKeyRemove" hidden>Remove key</button>
     </div>
   </form>
 </div>
@@ -714,6 +795,7 @@ body.hide-done .todo-sec li.task.done{display:none}
   var io = null;
   function render(){
     sectionsEl.innerHTML = ""; nav.innerHTML = ""; sections = [];
+    $("voiceFab").hidden = doc === null;
     if(doc === null){ renderWelcome(); return; }
     parts = splitDoc(doc);
     var start = 0;
@@ -772,6 +854,7 @@ body.hide-done .todo-sec li.task.done{display:none}
     if(h2) h2.remove();
     Array.prototype.slice.call(d.children).forEach(function(node){ if(node.tagName !== "HR") s.body.append(node); });
     decorate(s);
+    if(/^alarms$/i.test(s.label)) decorateReminders(s);
     sections.push(s);
   }
 
@@ -1172,12 +1255,432 @@ body.hide-done .todo-sec li.task.done{display:none}
     if(!inField && e.key === "/"){ e.preventDefault(); q.focus(); }
   });
 
+  /* ---------- voice notes ---------- */
+  var CLAUDE_MODEL = "claude-opus-5-5";
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], BYDAY = ["SU","MO","TU","WE","TH","FR","SA"];
+  var INBOX_TEXT = "## Inbox\n<!-- keep: label: Inbox; blurb: Voice notes waiting to be sorted. -->\n\nVoice notes land here when they don't clearly belong anywhere else, or when you save them without sorting. Move them with Edit section.";
+  var REM_TEXT = "## Alarms and reminders\n<!-- keep: label: Alarms; blurb: Alarms and calendar events from your voice notes. Put each in Google Calendar, then tick it off. -->\n\nEach line has a button that opens Google Calendar with it filled in. Tick a line off once it's set.";
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  function ymd(d){ return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseYmd(s){ var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  function fmtDay(d){ return DAYS[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear(); }
+  function okTime(hm){ return /^([01]?\d|2[0-3]):[0-5]\d$/.test(hm || ""); }
+  function fmtTime(hm){ if(!okTime(hm)) return ""; var p = hm.split(":"), h = +p[0]; return (h % 12 || 12) + ":" + p[1] + " " + (h >= 12 ? "pm" : "am"); }
+  function to24(h, mi, ap){ return pad(+h % 12 + (/pm/i.test(ap) ? 12 : 0)) + ":" + mi; }
+  function stamp(d){ return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00"; }
+  function nextDate(hm, test){
+    var now = new Date(), p = (hm || "00:00").split(":"), d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), +p[0], +p[1]);
+    for(var i = 0; i < 9 && (d <= now || (test && !test(d))); i++) d.setDate(d.getDate() + 1);
+    return ymd(d);
+  }
+
+  /* One line of the Alarms section, in a form both people and the app can read back. */
+  function alarmLine(a){
+    var when = fmtTime(a.time), d = parseYmd(a.date);
+    if(a.repeat === "daily") when += ", every day";
+    else if(a.repeat === "weekdays") when += ", every weekday";
+    else if(a.repeat === "weekly") when += ", every " + DAYS[(d || new Date()).getDay()];
+    else if(d) when += ", " + fmtDay(d);
+    return "Alarm " + when + ": " + norm(a.label || "Alarm");
+  }
+  function eventLine(e){
+    var d = parseYmd(e.date), when = "";
+    if(okTime(e.start)) when = fmtTime(e.start) + (okTime(e.end) ? " to " + fmtTime(e.end) : "") + ", ";
+    return "Event " + when + fmtDay(d) + ": " + norm(e.title || "Event") + (norm(e.location || "") ? " (" + norm(e.location) + ")" : "");
+  }
+  function parseReminder(text){
+    var m = /^(Alarm|Event)\s+(.+?):\s+(.+)$/.exec(norm(text)); if(!m) return null;
+    var when = m[2], r = { kind:m[1].toLowerCase(), title:m[3], location:"", recur:"" };
+    if(r.kind === "event"){ var lm = /\s\(([^)]+)\)$/.exec(r.title); if(lm){ r.location = lm[1]; r.title = r.title.slice(0, lm.index); } }
+    var times = []; when.replace(/(\d{1,2}):(\d{2})\s*(am|pm)/gi, function(all, h, mi, ap){ times.push(to24(h, mi, ap)); return all; });
+    r.start = times[0] || ""; r.end = times[1] || "";
+    var dm = /(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})/.exec(when);
+    if(dm){ var mo = MON.map(function(x){ return x.toLowerCase(); }).indexOf(dm[2].toLowerCase()); if(mo >= 0) r.date = ymd(new Date(+dm[3], mo, +dm[1])); }
+    var rep = /every\s+(day|weekday|[A-Za-z]{3})/i.exec(when);
+    if(rep){
+      var w = rep[1].toLowerCase(), di = DAYS.map(function(x){ return x.toLowerCase(); }).indexOf(w.slice(0, 3));
+      if(w === "day"){ r.recur = "FREQ=DAILY"; if(!r.date) r.date = nextDate(r.start); }
+      else if(w === "weekday"){ r.recur = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"; if(!r.date) r.date = nextDate(r.start, function(d){ return d.getDay() > 0 && d.getDay() < 6; }); }
+      else if(di >= 0){ r.recur = "FREQ=WEEKLY;BYDAY=" + BYDAY[di]; if(!r.date) r.date = nextDate(r.start, function(d){ return d.getDay() === di; }); }
+    }
+    if(!r.date){ if(!r.start) return null; r.date = nextDate(r.start); }
+    return r;
+  }
+  function gcalUrl(r){
+    var p = new URLSearchParams(), d = parseYmd(r.date);
+    p.set("action", "TEMPLATE");
+    p.set("text", r.kind === "alarm" ? "Alarm: " + r.title : r.title);
+    if(!okTime(r.start)){ var nx = new Date(d); nx.setDate(nx.getDate() + 1); p.set("dates", ymd(d).replace(/-/g, "") + "/" + ymd(nx).replace(/-/g, "")); }
+    else {
+      var hs = r.start.split(":"), s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +hs[0], +hs[1]), en;
+      if(okTime(r.end)){ var he = r.end.split(":"); en = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +he[0], +he[1]); if(en <= s) en.setDate(en.getDate() + 1); }
+      else en = new Date(s.getTime() + (r.kind === "alarm" ? 10 : 60) * 60000);
+      p.set("dates", stamp(s) + "/" + stamp(en));
+      try{ p.set("ctz", Intl.DateTimeFormat().resolvedOptions().timeZone); }catch(e){}
+    }
+    p.set("details", r.details || (r.kind === "alarm" ? "Alarm from Keep Notes" : "Added from Keep Notes"));
+    if(r.location) p.set("location", r.location);
+    if(r.recur) p.set("recur", "RRULE:" + r.recur);
+    return "https://calendar.google.com/calendar/render?" + p.toString();
+  }
+  function openCal(r){ window.open(gcalUrl(r), "_blank", "noopener"); }
+  function decorateReminders(s){
+    s.body.querySelectorAll("li.task").forEach(function(li){
+      var r = parseReminder(li.textContent); if(!r) return;
+      var wrap = document.createElement("span"); wrap.className = "rem-actions";
+      var b = document.createElement("button"); b.type = "button"; b.className = "tool"; b.textContent = "Google Calendar";
+      b.addEventListener("click", function(e){ e.preventDefault(); e.stopPropagation(); openCal(r); });
+      wrap.append(b); li.append(wrap);
+    });
+  }
+
+  /* Adding lines to sections */
+  function appendUnder(p, isLast, headRe, headText, line, itemRe){
+    var body = stripTrail(p), lines = body.split("\n"), h = -1, j;
+    lines.forEach(function(l, i){ if(h < 0 && headRe.test(l)) h = i; });
+    if(h < 0) body += "\n\n" + headText + "\n\n" + line;
+    else {
+      var end = lines.length; for(j = h + 1; j < lines.length; j++){ if(/^#{2,3}\s/.test(lines[j])){ end = j; break; } }
+      var last = -1; for(j = h + 1; j < end; j++){ if(itemRe.test(lines[j])) last = j; }
+      if(last < 0) lines.splice(h + 1, 0, "", line); else lines.splice(last + 1, 0, line);
+      body = lines.join("\n");
+    }
+    return body + (isLast ? "\n" : "\n\n---\n\n");
+  }
+  function findLabel(ps, label){ for(var i = 0; i < ps.length; i++){ if(/^## /.test(ps[i]) && String(readMeta(ps[i]).label || "").toLowerCase() === label.toLowerCase()) return i; } return -1; }
+  function ensureLabeled(md, label, text){
+    var ps = splitDoc(md); if(findLabel(ps, label) >= 0) return md;
+    var at = -1;
+    for(var i = 0; i < ps.length; i++){ if(/^## start here/i.test(ps[i]) || String(readMeta(ps[i]).label || "").toLowerCase() === "start"){ at = i + 1; break; } }
+    if(at < 0) at = /^## /.test(ps[0] || "") ? 0 : 1;
+    if(at >= ps.length){ ps[ps.length - 1] = stripTrail(ps[ps.length - 1]) + "\n\n---\n\n"; ps.push(text + "\n"); }
+    else ps.splice(at, 0, text + "\n\n---\n\n");
+    return ps.join("");
+  }
+  /* items: [{kind:"note"|"todo", target:"s3"|"inbox", text}], alarms/events as from the review. Returns how many lines were added. */
+  function applyVoice(items, alarms, events){
+    var heads = {}, cur = splitDoc(doc), n = 0;
+    items.forEach(function(it){
+      if(it.target !== "inbox"){ var h = vSecMap[it.target] && vSecMap[it.target].head; if(!h || !cur.some(function(p){ return p.split("\n")[0] === h; })) it.target = "inbox"; else heads[it.target] = h; }
+    });
+    var md = doc;
+    if(items.some(function(it){ return it.target === "inbox"; })) md = ensureLabeled(md, "Inbox", INBOX_TEXT);
+    if(alarms.length || events.length) md = ensureLabeled(md, "Alarms", REM_TEXT);
+    var ps = splitDoc(md), today = new Date(), stampDay = today.getDate() + " " + MON[today.getMonth()];
+    function idx(target){ if(target === "inbox") return findLabel(ps, "Inbox"); for(var i = 0; i < ps.length; i++){ if(ps[i].split("\n")[0] === heads[target]) return i; } return -1; }
+    items.forEach(function(it){
+      var i = idx(it.target); if(i < 0) return;
+      if(it.kind === "todo") ps[i] = appendUnder(ps[i], i === ps.length - 1, /^###\s+open to-dos/i, "### Open to-dos from these notes", "- [ ] " + norm(it.text), TASK_RE);
+      else ps[i] = appendUnder(ps[i], i === ps.length - 1, /^###\s+voice notes/i, "### Voice notes", "- " + stampDay + ": " + norm(it.text), /^\s*[-*+]\s/);
+      n++;
+    });
+    var ri = findLabel(ps, "Alarms");
+    if(ri >= 0){
+      alarms.forEach(function(a){ ps[ri] = appendUnder(ps[ri], ri === ps.length - 1, /^###\s+alarms and events/i, "### Alarms and events", "- [ ] " + alarmLine(a), TASK_RE); n++; });
+      events.forEach(function(e){ ps[ri] = appendUnder(ps[ri], ri === ps.length - 1, /^###\s+alarms and events/i, "### Alarms and events", "- [ ] " + eventLine(e), TASK_RE); n++; });
+    }
+    if(n) change(ps.join(""));
+    return n;
+  }
+
+  /* Listening */
+  var vDlg = $("voiceDialog"), vText = $("vText"), vLive = $("vLive");
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, wantListen = false, vBase = "", vHeard = false, vQuiet = 0, vBusy = false, vSecMap = {}, vRows = null, cancelArmed = false;
+  function setLive(state, text){ vLive.dataset.state = state; $("vLiveText").textContent = text; }
+  function vErr(msg, settings){
+    var p = $("vErr"); p.textContent = msg || ""; p.hidden = !msg;
+    if(msg && settings){ var b = document.createElement("button"); b.type = "button"; b.className = "tool small"; b.textContent = "Open voice settings"; b.style.marginLeft = "8px"; b.addEventListener("click", openVoiceSettings); p.append(" ", b); }
+  }
+  function micLabel(){ $("vMic").textContent = wantListen ? "Stop listening" : "Start listening"; }
+  function rebase(){ vBase = vText.value.replace(/\s+$/, ""); if(vBase) vBase += " "; }
+  function startListening(){
+    vErr("");
+    if(!SR){ setLive("off", "Voice typing isn't available in this browser. Type here, or use your keyboard's microphone."); vText.focus(); return; }
+    if(wantListen) return;
+    wantListen = true; vQuiet = 0; rebase(); micLabel(); runRec();
+  }
+  function runRec(){
+    try{
+      rec = new SR(); rec.lang = navigator.language || "en-NZ"; rec.continuous = true; rec.interimResults = true; vHeard = false;
+      rec.onstart = function(){ setLive("on", "Listening… speak now"); };
+      rec.onresult = function(e){
+        var fin = "", tmp = "";
+        for(var i = 0; i < e.results.length; i++){ var t = e.results[i][0].transcript; if(e.results[i].isFinal) fin += t; else tmp += t; }
+        vHeard = true; vText.value = vBase + (fin + tmp).replace(/^\s+/, ""); vText.scrollTop = vText.scrollHeight; lsSet("voiceDraft", vText.value);
+      };
+      rec.onerror = function(e){
+        if(e.error === "not-allowed" || e.error === "service-not-allowed"){ wantListen = false; vErr("The microphone is blocked for this app. Allow it in the browser's site settings for this page, then tap Start listening."); }
+        else if(e.error === "network"){ wantListen = false; vErr("Voice typing needs an internet connection. You can type instead, or save to the Inbox."); }
+        else if(e.error === "audio-capture"){ wantListen = false; vErr("No microphone was found."); }
+      };
+      rec.onend = function(){
+        rec = null;
+        vQuiet = vHeard ? 0 : vQuiet + 1;
+        if(wantListen && vQuiet < 2){ rebase(); setTimeout(function(){ if(wantListen && !rec) runRec(); }, 200); return; }
+        wantListen = false; micLabel();
+        setLive("off", vText.value.trim() ? "Stopped. Fix anything misheard, then tap Sort it." : "Stopped. Tap Start listening to try again.");
+      };
+      rec.start();
+    }catch(err){ rec = null; wantListen = false; micLabel(); setLive("off", "Tap Start listening to begin."); }
+  }
+  function stopListening(){
+    wantListen = false; micLabel();
+    if(rec){ try{ rec.stop(); }catch(e){} }
+    else setLive("off", vText.value.trim() ? "Stopped. Fix anything misheard, then tap Sort it." : "Not listening");
+  }
+  function showCapture(){ $("vCapture").hidden = false; $("vReview").hidden = true; vRows = null; }
+  function openVoice(listen){
+    if(doc === null) return;
+    closeMenu();
+    if(vDlg.hidden){
+      vText.value = lsGet("voiceDraft", ""); showCapture(); vErr(""); cancelArmed = false; $("vCancel").textContent = "Cancel";
+      vDlg.hidden = false; document.body.style.overflow = "hidden";
+      setLive("off", SR ? "Not listening" : "Voice typing isn't available in this browser. Type here, or use your keyboard's microphone.");
+    }
+    if(listen && !$("vCapture").hidden) startListening();
+  }
+  function closeVoice(discard){
+    stopListening();
+    if(discard) lsSet("voiceDraft", null);
+    vDlg.hidden = true; document.body.style.overflow = "";
+  }
+  function busy(on, label){
+    vBusy = on; ["vSort", "vMic", "vInbox"].forEach(function(id){ $(id).disabled = on; });
+    if(on) setLive("busy", label);
+  }
+
+  /* Sorting with Claude */
+  var sdkP = null;
+  function loadSdk(){
+    if(window.Anthropic) return Promise.resolve(window.Anthropic);
+    if(!sdkP) sdkP = new Promise(function(res, rej){
+      var s = document.createElement("script"); s.src = "anthropic.min.js";
+      s.onload = function(){ window.Anthropic ? res(window.Anthropic) : rej(new Error("The Claude library didn't load.")); };
+      s.onerror = function(){ sdkP = null; rej(new Error("Couldn't load the Claude library. Check your connection.")); };
+      document.head.append(s);
+    });
+    return sdkP;
+  }
+  function sectionList(){
+    vSecMap = {}; var lines = [];
+    sections.forEach(function(s){
+      if(!s.num) return;
+      var id = "s" + s.num; if(vSecMap[id]) id += "-" + s.pi;
+      vSecMap[id] = { head:parts[s.pi].split("\n")[0], name:s.num + ". " + (s.short || s.title), gi:s.gi };
+      lines.push("- " + id + ": " + s.title + (s.priv ? " (private)" : (s.blurb ? " | " + s.blurb : "")));
+    });
+    return lines;
+  }
+  var SYSTEM = [
+    "You sort one person's spoken voice notes into their personal notes app. The text came from speech recognition, so expect misheard words, missing punctuation and filler.",
+    "Split the note into separate items when it covers several things. For each item, write it the way the person would jot it down: first person, plain and short, misheard words fixed when the meaning is clear, filler removed. Keep their meaning; don't add facts or advice.",
+    "kind is \"todo\" for something they need to do, otherwise \"note\". section is the id of the section it fits best; use \"inbox\" when nothing fits well or you're unsure.",
+    "alarms: only when they ask to be woken, alarmed or reminded at a particular clock time. label is a few words. time is 24-hour HH:MM. date is YYYY-MM-DD, or empty when they gave no day (the next time that clock time comes round). repeat is none, daily, weekdays or weekly.",
+    "events: appointments, meetings and plans on a particular day that belong in a calendar. date is required (YYYY-MM-DD); start and end are 24-hour HH:MM or empty when not said (empty start means all day). If you can't work out a day, make it a todo instead.",
+    "Don't repeat an alarm or event as a todo unless there is a separate task to do. Work out relative days (\"tomorrow\", \"next Tuesday\") from the current date you are given.",
+    "summary is one short sentence saying what you understood."
+  ].join("\n\n");
+  function schemaFor(ids){
+    var str = { type:"string" };
+    return { type:"object", additionalProperties:false, required:["summary", "items", "alarms", "events"], properties:{
+      summary:str,
+      items:{ type:"array", items:{ type:"object", additionalProperties:false, required:["kind", "section", "text"], properties:{
+        kind:{ type:"string", enum:["note", "todo"] }, section:{ type:"string", enum:ids.concat("inbox") }, text:str } } },
+      alarms:{ type:"array", items:{ type:"object", additionalProperties:false, required:["label", "date", "time", "repeat"], properties:{
+        label:str, date:str, time:str, repeat:{ type:"string", enum:["none", "daily", "weekdays", "weekly"] } } } },
+      events:{ type:"array", items:{ type:"object", additionalProperties:false, required:["title", "date", "start", "end", "location", "details"], properties:{
+        title:str, date:str, start:str, end:str, location:str, details:str } } }
+    } };
+  }
+  function nowText(){
+    var d = new Date(), tz = ""; try{ tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){}
+    return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + (tz ? " (" + tz + ")" : "") + ", that is " + ymd(d);
+  }
+  async function askClaude(A, key, text){
+    var secLines = sectionList();
+    var client = new A({ apiKey:key, dangerouslyAllowBrowser:true, baseURL:lsGet("claudeBase", null) || undefined, maxRetries:1, timeout:90000 });
+    var res = await client.beta.messages.create({
+      model:CLAUDE_MODEL,
+      max_tokens:16000,
+      betas:["server-side-fallback-2026-07-01"],
+      fallbacks:"default",
+      output_config:{ effort:"low", format:{ type:"json_schema", schema:schemaFor(Object.keys(vSecMap)) } },
+      system:SYSTEM,
+      messages:[{ role:"user", content:"Current date and time: " + nowText() + "\n\nSections:\n" + secLines.join("\n") + "\n\nVoice note:\n<voice_note>\n" + text + "\n</voice_note>" }]
+    });
+    if(res.stop_reason === "refusal"){ var rf = new Error("refusal"); rf.code = "refusal"; throw rf; }
+    var out = res.content.filter(function(b){ return b.type === "text"; }).map(function(b){ return b.text; }).join("");
+    var j;
+    try{ j = JSON.parse(out); }catch(e){ var bad = new Error(res.stop_reason === "max_tokens" ? "Claude's answer was cut short. Try a shorter note." : "Claude's answer couldn't be read. Try again."); throw bad; }
+    return {
+      summary:String(j.summary || ""),
+      items:(j.items || []).filter(function(it){ return it && norm(String(it.text || "")); }).map(function(it){ return { kind:it.kind === "todo" ? "todo" : "note", target:vSecMap[it.section] ? it.section : "inbox", text:norm(String(it.text)) }; }),
+      alarms:(j.alarms || []).filter(function(a){ return a && okTime(a.time); }).map(function(a){ return { label:norm(String(a.label || "Alarm")), date:parseYmd(a.date) ? a.date : "", time:a.time.length === 4 ? "0" + a.time : a.time, repeat:/^(daily|weekdays|weekly)$/.test(a.repeat) ? a.repeat : "none" }; }),
+      events:(j.events || []).filter(function(e){ return e && parseYmd(e.date); }).map(function(e){ return { title:norm(String(e.title || "Event")), date:e.date, start:okTime(e.start) ? e.start : "", end:okTime(e.end) ? e.end : "", location:norm(String(e.location || "")), details:String(e.details || "") }; })
+    };
+  }
+  function explain(err, A){
+    if(err && err.code === "refusal") return "Claude declined to sort this note. You can save it to the Inbox instead.";
+    if(A){
+      if(err instanceof A.AuthenticationError) return { msg:"Claude didn't accept the API key. Check it in Voice notes settings.", settings:true };
+      if(err instanceof A.PermissionDeniedError) return { msg:"This API key isn't allowed to do that. Check the key in the Claude Console.", settings:true };
+      if(err instanceof A.RateLimitError) return "Claude is busy, or your account has hit a usage limit. Try again in a minute.";
+      if(err instanceof A.APIConnectionError) return "Couldn't reach Claude. Check your connection, or save this to the Inbox for now.";
+      if(err instanceof A.BadRequestError) return /credit|balance|billing/i.test(err.message || "") ? "Your Claude account is out of credit. Add some at console.anthropic.com, or save this to the Inbox for now." : "Claude couldn't handle the request (" + (err.status || 400) + "). You can save this to the Inbox instead.";
+      if(err instanceof A.APIError) return "Claude had a problem" + (err.status ? " (" + err.status + ")" : "") + ". Try again in a moment.";
+    }
+    return (err && err.message) || "Something went wrong. Try again.";
+  }
+  async function sortIt(){
+    if(vBusy) return;
+    var text = vText.value.trim();
+    if(!text){ vErr("Say or type something first."); return; }
+    stopListening(); lsSet("voiceDraft", vText.value);
+    var key = lsGet("claudeKey", null);
+    if(!key){ vErr("Add your Claude API key in Voice notes settings first, or save this to the Inbox for now.", true); return; }
+    if(navigator.onLine === false){ vErr("You're offline. Save this to the Inbox now and sort it when you're back online."); return; }
+    vErr(""); busy(true, "Sorting with Claude…");
+    var A = null;
+    try{ A = await loadSdk(); var r = await askClaude(A, key, text); busy(false); showReview(r); }
+    catch(err){ busy(false); setLive("off", "Not sorted"); var x = explain(err, A); if(typeof x === "string") vErr(x); else vErr(x.msg, x.settings); }
+  }
+
+  /* Review */
+  function mk(tag, cls, text){ var e = document.createElement(tag); if(cls) e.className = cls; if(text !== undefined) e.textContent = text; return e; }
+  function input(type, value, label){ var i = document.createElement("input"); i.type = type; i.value = value || ""; i.setAttribute("aria-label", label); return i; }
+  function keepBox(box, label){
+    var l = mk("label", "check"), c = document.createElement("input"); c.type = "checkbox"; c.checked = true;
+    c.addEventListener("change", function(){ box.classList.toggle("off", !c.checked); });
+    l.append(c, mk("span", "", label)); return { el:l, box:c };
+  }
+  function secPick(value){
+    var s = document.createElement("select"); s.className = "sec-pick"; s.setAttribute("aria-label", "Section");
+    Object.keys(vSecMap).forEach(function(id){ var o = document.createElement("option"); o.value = id; o.textContent = vSecMap[id].name; s.append(o); });
+    var o = document.createElement("option"); o.value = "inbox"; o.textContent = "Inbox"; s.append(o);
+    s.value = value; return s;
+  }
+  function tint(box, target){ var m = vSecMap[target]; box.style.setProperty("--gc", m && m.gi >= 0 ? "var(--g" + (m.gi % 5 + 1) + ")" : "var(--line)"); }
+  function showReview(r){
+    vRows = { items:[], alarms:[], events:[] };
+    $("vSummary").textContent = r.summary || "Here's what Claude found.";
+    var wi = $("vItems"), wa = $("vAlarms"), we = $("vEvents"); wi.innerHTML = wa.innerHTML = we.innerHTML = "";
+    if(r.items.length) wi.append(mk("h3", "", "Notes and to-dos"));
+    r.items.forEach(function(it){
+      var box = mk("div", "ritem"), row = mk("div", "row"), k = keepBox(box, "Keep");
+      var kind = document.createElement("select"); kind.setAttribute("aria-label", "Type");
+      [["todo", "To-do"], ["note", "Note"]].forEach(function(p){ var o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; kind.append(o); });
+      kind.value = it.kind;
+      var sec = secPick(it.target); sec.addEventListener("change", function(){ tint(box, sec.value); }); tint(box, it.target);
+      var ta = document.createElement("textarea"); ta.value = it.text; ta.setAttribute("aria-label", "Text");
+      row.append(k.el, kind, sec); box.append(row, ta); wi.append(box);
+      vRows.items.push(function(){ return k.box.checked && norm(ta.value) ? { kind:kind.value, target:sec.value, text:ta.value } : null; });
+    });
+    if(r.alarms.length) wa.append(mk("h3", "", "Alarms"));
+    r.alarms.forEach(function(a){
+      var box = mk("div", "ritem"), k = keepBox(box, "Add to the alarm list"), row = mk("div", "row"), row2 = mk("div", "row");
+      var lab = input("text", a.label, "Alarm label"), tm = input("time", a.time, "Time"), dt = input("date", a.date, "Date (leave empty for the next one)");
+      var rp = document.createElement("select"); rp.setAttribute("aria-label", "Repeat");
+      [["none", "Once"], ["daily", "Every day"], ["weekdays", "Weekdays"], ["weekly", "Every week"]].forEach(function(p){ var o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; rp.append(o); });
+      rp.value = a.repeat;
+      function val(){ return { label:norm(lab.value) || "Alarm", time:tm.value, date:dt.value, repeat:rp.value }; }
+      var cal = mk("button", "tool small", "Google Calendar"); cal.type = "button";
+      cal.addEventListener("click", function(){ var v = val(); if(!okTime(v.time)) return; var p = parseReminder(alarmLine(v)); if(p) openCal(p); });
+      row.append(lab); row2.append(tm, dt, rp, cal); box.append(k.el, row, row2); wa.append(box);
+      vRows.alarms.push(function(){ var v = val(); return k.box.checked && okTime(v.time) ? v : null; });
+    });
+    if(r.events.length) we.append(mk("h3", "", "Calendar events"));
+    r.events.forEach(function(e){
+      var box = mk("div", "ritem"), k = keepBox(box, "Add to the reminders list"), row = mk("div", "row"), row2 = mk("div", "row"), row3 = mk("div", "row");
+      var ti = input("text", e.title, "Event title"), dt = input("date", e.date, "Date"), st = input("time", e.start, "Start time"), en = input("time", e.end, "End time"), lo = input("text", e.location, "Location");
+      lo.placeholder = "Location";
+      function val(){ return { kind:"event", title:norm(ti.value) || "Event", date:dt.value, start:st.value, end:en.value, location:norm(lo.value), details:e.details }; }
+      var cal = mk("button", "btn", "Add to Google Calendar"); cal.type = "button";
+      cal.addEventListener("click", function(){ var v = val(); if(!parseYmd(v.date)) return; openCal(v); cal.textContent = "Opened in Google Calendar"; });
+      row.append(ti); row2.append(dt, st, mk("span", "muted", "to"), en); row3.append(lo, cal); box.append(k.el, row, row2, row3); we.append(box);
+      vRows.events.push(function(){ var v = val(); return k.box.checked && parseYmd(v.date) ? v : null; });
+    });
+    if(!r.items.length && !r.alarms.length && !r.events.length) wi.append(mk("p", "muted", "Nothing to save. Go back to the text to add more, or save it to the Inbox."));
+    $("vSaveErr").hidden = true;
+    $("vCapture").hidden = true; $("vReview").hidden = false;
+    vDlg.scrollTop = 0;
+  }
+  function saveReview(){
+    if(!vRows) return;
+    function take(list){ return list.map(function(f){ return f(); }).filter(Boolean); }
+    var items = take(vRows.items), alarms = take(vRows.alarms), events = take(vRows.events);
+    if(!items.length && !alarms.length && !events.length){ $("vSaveErr").textContent = "Nothing is ticked to keep."; $("vSaveErr").hidden = false; return; }
+    var n = applyVoice(items, alarms, events);
+    closeVoice(true);
+    flash(n === 1 ? "Saved 1 line from your voice note" : "Saved " + n + " lines from your voice note");
+  }
+  function saveToInbox(){
+    var text = vText.value.trim(); if(!text){ vErr("Say or type something first."); return; }
+    stopListening();
+    applyVoice([{ kind:"note", target:"inbox", text:text }], [], []);
+    closeVoice(true);
+    flash("Saved to the Inbox");
+  }
+
+  /* Settings */
+  var vsDlg = $("voiceSetDialog");
+  function openVoiceSettings(){
+    closeMenu();
+    $("claudeKey").value = ""; $("claudeKey").placeholder = lsGet("claudeKey", null) ? "Saved on this device" : "sk-ant-…";
+    $("claudeKeyRemove").hidden = !lsGet("claudeKey", null); $("claudeKeyRemove").classList.remove("armed"); $("claudeKeyRemove").textContent = "Remove key";
+    $("autoVoice").checked = !!lsGet("autoVoice", false); $("voiceSetErr").hidden = true;
+    vsDlg.hidden = false; $("claudeKey").focus();
+  }
+  function closeVoiceSettings(){ vsDlg.hidden = true; }
+  $("voiceSetForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var k = $("claudeKey").value.trim();
+    if(k && /\s/.test(k)){ $("voiceSetErr").textContent = "That doesn't look like an API key. Copy it again from the Claude Console."; $("voiceSetErr").hidden = false; return; }
+    if(k) lsSet("claudeKey", k);
+    lsSet("autoVoice", $("autoVoice").checked);
+    closeVoiceSettings(); flash("Voice settings saved");
+    if(!vDlg.hidden) vErr("");
+  });
+  $("claudeKeyRemove").addEventListener("click", function(){
+    var b = $("claudeKeyRemove");
+    if(!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "Tap again to remove"; return; }
+    lsSet("claudeKey", null); closeVoiceSettings(); flash("Claude key removed from this device");
+  });
+  $("voiceSetClose").addEventListener("click", closeVoiceSettings);
+  vsDlg.addEventListener("click", function(e){ if(e.target === vsDlg) closeVoiceSettings(); });
+  vsDlg.addEventListener("keydown", function(e){ if(e.key === "Escape") closeVoiceSettings(); });
+
+  /* Wiring */
+  $("voiceFab").addEventListener("click", function(){ openVoice(true); });
+  $("mVoice").addEventListener("click", openVoiceSettings);
+  $("vMic").addEventListener("click", function(){ if(wantListen) stopListening(); else startListening(); });
+  $("vSort").addEventListener("click", sortIt);
+  $("vInbox").addEventListener("click", saveToInbox);
+  $("vSave").addEventListener("click", saveReview);
+  $("vBack").addEventListener("click", function(){ showCapture(); setLive("off", "Not listening"); });
+  $("vCancel").addEventListener("click", function(){
+    if(vText.value.trim() && !cancelArmed){ cancelArmed = true; $("vCancel").textContent = "Tap again to discard"; return; }
+    closeVoice(true);
+  });
+  vText.addEventListener("input", function(){ if(wantListen) stopListening(); lsSet("voiceDraft", vText.value); cancelArmed = false; $("vCancel").textContent = "Cancel"; });
+  vDlg.addEventListener("keydown", function(e){ if(e.key === "Escape" && !vBusy){ if(!$("vReview").hidden){ showCapture(); } else { stopListening(); vDlg.hidden = true; document.body.style.overflow = ""; } } });
+  var hiddenAt = 0;
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){ hiddenAt = Date.now(); if(wantListen) stopListening(); return; }
+    if(lsGet("autoVoice", false) && hiddenAt && Date.now() - hiddenAt > 60000 && vDlg.hidden && vsDlg.hidden) openVoice(true);
+  });
+  window.__keepNotesVoice = { parseReminder:parseReminder, gcalUrl:gcalUrl, alarmLine:alarmLine, eventLine:eventLine, applyVoice:applyVoice, showReview:showReview };
+
   /* ---------- start ---------- */
   render();
   updateSave();
   if(lsGet("conflictLocal", null)){ $("conflictText").textContent = "An earlier sync clash left this device's version waiting. The synced version is shown."; $("conflict").hidden = false; }
   if(location.hash) goHash();
   syncNow();
+  // Opened from the "Record" shortcut, or set to listen on open.
+  if(/[?&]record\b/.test(location.search)){ try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){} openVoice(true); }
+  else if(lsGet("autoVoice", false)) openVoice(true);
   if(FS){
     idbGet("handle").then(async function(h){
       if(!h) return;

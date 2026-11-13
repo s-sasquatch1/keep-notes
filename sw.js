@@ -1,6 +1,6 @@
 // Keeps the app working offline. Notes themselves live in the app's own storage and in your private repository, never in this cache.
-const VERSION = "keep-notes-v1";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"];
+const VERSION = "keep-notes-v2";
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./icon-mic-192.png", "./anthropic.min.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -17,7 +17,7 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  if (url.hostname === "api.github.com") return;
+  if (url.hostname === "api.github.com" || url.hostname === "api.anthropic.com") return;
 
   if (url.origin === self.location.origin) {
     if (req.mode === "navigate" || url.pathname.endsWith("/") || url.pathname.endsWith(".html")) {
