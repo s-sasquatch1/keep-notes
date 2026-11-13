@@ -196,6 +196,8 @@ h1.title{font:700 clamp(28px,4.4vw,44px)/1.08 var(--font-display);letter-spacing
 .ritem select.sec-pick{flex:1 1 160px}
 .ritem textarea{min-height:60px;font-size:15px}
 .rem-actions{display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle}
+.set-h{font:600 12px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 -4px}
+.row-inline{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
 .prose li.task .rem-actions .tool{padding:2px 8px;font-size:12px}
 
 /* Prose */
@@ -305,6 +307,11 @@ body.hide-done .todo-sec li.task.done{display:none}
       <ul class="legend" id="legend" hidden></ul>
     </header>
 
+    <div class="banner" id="pending" hidden>
+      <p id="pendingText"></p>
+      <button class="btn" type="button" id="pendingReview">Review now</button>
+    </div>
+
     <div class="banner warn" id="conflict" hidden>
       <p id="conflictText"></p>
       <button class="btn" type="button" id="conflictUseMine">Use this device's version</button>
@@ -408,6 +415,7 @@ body.hide-done .todo-sec li.task.done{display:none}
         <button class="tool big" type="button" id="vMic">Start listening</button>
         <span class="spacer"></span>
         <button class="tool" type="button" id="vInbox">Save to Inbox</button>
+        <button class="tool" type="button" id="vLater">Later</button>
         <button class="tool" type="button" id="vCancel">Cancel</button>
       </div>
     </div>
@@ -419,6 +427,7 @@ body.hide-done .todo-sec li.task.done{display:none}
       <p class="err" id="vSaveErr" hidden></p>
       <div class="actions">
         <button class="btn big" type="button" id="vSave">Save to notes</button>
+        <button class="tool" type="button" id="vLater2">Later</button>
         <button class="tool" type="button" id="vBack">Back to the text</button>
       </div>
     </div>
@@ -433,8 +442,19 @@ body.hide-done .todo-sec li.task.done{display:none}
       <input id="claudeKey" type="password" autocapitalize="off" spellcheck="false" placeholder="sk-ant-…">
       <small>Create one at console.anthropic.com under API keys. It is stored only on this device and is used only to send each voice note, with your section names, to Claude. Leave blank to keep the saved one.</small>
     </label>
-    <label class="check"><input type="checkbox" id="autoVoice"> <span>Start listening as soon as the app opens<br><small class="muted">Also when you come back to it after more than a minute.</small></span></label>
-    <p><b>Quick start.</b> Long-press the Notes icon on your home screen and drag <b>Record</b> onto the home screen for a one-tap recording button. To open the app with the side button: Settings › Advanced features › Side button › Double press › Open app › Notes.</p>
+    <h3 class="set-h">Record with the side button</h3>
+    <p>Record is a tiny separate app that starts listening as soon as it opens, stops when you stop talking, sorts the note and closes, leaving a notification to review. To set it up, open <b id="recordUrl">…/keep-notes/record/</b> in Chrome (type it in the address bar), tap ⋮ › <b>Install</b>, then go to Settings › Advanced features › Side button › Double press › Open app › <b>Record</b>.</p>
+    <h3 class="set-h">Notifications</h3>
+    <p id="notifState"></p>
+    <button class="tool" type="button" id="notifBtn" hidden>Turn on notifications</button>
+    <h3 class="set-h">End-of-day review</h3>
+    <p>Notes you leave for later wait in a list here. A daily Google Calendar reminder can prompt you to go through them.</p>
+    <div class="row-inline">
+      <label class="field" for="reviewTime">Time<input id="reviewTime" type="time" value="20:00"></label>
+      <button class="tool" type="button" id="reviewCal">Add the daily reminder to Google Calendar</button>
+    </div>
+    <h3 class="set-h">This app</h3>
+    <label class="check"><input type="checkbox" id="autoVoice"> <span>Start listening whenever Notes opens<br><small class="muted">Leave this off if you use the Record app.</small></span></label>
     <p class="err" id="voiceSetErr" hidden></p>
     <div class="actions">
       <button class="btn" type="submit">Save</button>
@@ -455,6 +475,7 @@ body.hide-done .todo-sec li.task.done{display:none}
 !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).marked={})}(this,(function(e){"use strict";function t(){return{async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null}}function n(t){e.defaults=t}e.defaults={async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null};const s=/[&<>"']/,r=new RegExp(s.source,"g"),i=/[<>"']|&(?!(#\d{1,7}|#[Xx][a-fA-F0-9]{1,6}|\w+);)/,l=new RegExp(i.source,"g"),o={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"},a=e=>o[e];function c(e,t){if(t){if(s.test(e))return e.replace(r,a)}else if(i.test(e))return e.replace(l,a);return e}const h=/&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/gi;function p(e){return e.replace(h,((e,t)=>"colon"===(t=t.toLowerCase())?":":"#"===t.charAt(0)?"x"===t.charAt(1)?String.fromCharCode(parseInt(t.substring(2),16)):String.fromCharCode(+t.substring(1)):""))}const u=/(^|[^\[])\^/g;function k(e,t){let n="string"==typeof e?e:e.source;t=t||"";const s={replace:(e,t)=>{let r="string"==typeof t?t:t.source;return r=r.replace(u,"$1"),n=n.replace(e,r),s},getRegex:()=>new RegExp(n,t)};return s}function g(e){try{e=encodeURI(e).replace(/%25/g,"%")}catch(e){return null}return e}const f={exec:()=>null};function d(e,t){const n=e.replace(/\|/g,((e,t,n)=>{let s=!1,r=t;for(;--r>=0&&"\\"===n[r];)s=!s;return s?"|":" |"})).split(/ \|/);let s=0;if(n[0].trim()||n.shift(),n.length>0&&!n[n.length-1].trim()&&n.pop(),t)if(n.length>t)n.splice(t);else for(;n.length<t;)n.push("");for(;s<n.length;s++)n[s]=n[s].trim().replace(/\\\|/g,"|");return n}function x(e,t,n){const s=e.length;if(0===s)return"";let r=0;for(;r<s;){const i=e.charAt(s-r-1);if(i!==t||n){if(i===t||!n)break;r++}else r++}return e.slice(0,s-r)}function b(e,t,n,s){const r=t.href,i=t.title?c(t.title):null,l=e[1].replace(/\\([\[\]])/g,"$1");if("!"!==e[0].charAt(0)){s.state.inLink=!0;const e={type:"link",raw:n,href:r,title:i,text:l,tokens:s.inlineTokens(l)};return s.state.inLink=!1,e}return{type:"image",raw:n,href:r,title:i,text:c(l)}}class w{options;rules;lexer;constructor(t){this.options=t||e.defaults}space(e){const t=this.rules.block.newline.exec(e);if(t&&t[0].length>0)return{type:"space",raw:t[0]}}code(e){const t=this.rules.block.code.exec(e);if(t){const e=t[0].replace(/^ {1,4}/gm,"");return{type:"code",raw:t[0],codeBlockStyle:"indented",text:this.options.pedantic?e:x(e,"\n")}}}fences(e){const t=this.rules.block.fences.exec(e);if(t){const e=t[0],n=function(e,t){const n=e.match(/^(\s+)(?:```)/);if(null===n)return t;const s=n[1];return t.split("\n").map((e=>{const t=e.match(/^\s+/);if(null===t)return e;const[n]=t;return n.length>=s.length?e.slice(s.length):e})).join("\n")}(e,t[3]||"");return{type:"code",raw:e,lang:t[2]?t[2].trim().replace(this.rules.inline.anyPunctuation,"$1"):t[2],text:n}}}heading(e){const t=this.rules.block.heading.exec(e);if(t){let e=t[2].trim();if(/#$/.test(e)){const t=x(e,"#");this.options.pedantic?e=t.trim():t&&!/ $/.test(t)||(e=t.trim())}return{type:"heading",raw:t[0],depth:t[1].length,text:e,tokens:this.lexer.inline(e)}}}hr(e){const t=this.rules.block.hr.exec(e);if(t)return{type:"hr",raw:t[0]}}blockquote(e){const t=this.rules.block.blockquote.exec(e);if(t){let e=t[0].replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g,"\n    $1");e=x(e.replace(/^ *>[ \t]?/gm,""),"\n");const n=this.lexer.state.top;this.lexer.state.top=!0;const s=this.lexer.blockTokens(e);return this.lexer.state.top=n,{type:"blockquote",raw:t[0],tokens:s,text:e}}}list(e){let t=this.rules.block.list.exec(e);if(t){let n=t[1].trim();const s=n.length>1,r={type:"list",raw:"",ordered:s,start:s?+n.slice(0,-1):"",loose:!1,items:[]};n=s?`\\d{1,9}\\${n.slice(-1)}`:`\\${n}`,this.options.pedantic&&(n=s?n:"[*+-]");const i=new RegExp(`^( {0,3}${n})((?:[\t ][^\\n]*)?(?:\\n|$))`);let l="",o="",a=!1;for(;e;){let n=!1;if(!(t=i.exec(e)))break;if(this.rules.block.hr.test(e))break;l=t[0],e=e.substring(l.length);let s=t[2].split("\n",1)[0].replace(/^\t+/,(e=>" ".repeat(3*e.length))),c=e.split("\n",1)[0],h=0;this.options.pedantic?(h=2,o=s.trimStart()):(h=t[2].search(/[^ ]/),h=h>4?1:h,o=s.slice(h),h+=t[1].length);let p=!1;if(!s&&/^ *$/.test(c)&&(l+=c+"\n",e=e.substring(c.length+1),n=!0),!n){const t=new RegExp(`^ {0,${Math.min(3,h-1)}}(?:[*+-]|\\d{1,9}[.)])((?:[ \t][^\\n]*)?(?:\\n|$))`),n=new RegExp(`^ {0,${Math.min(3,h-1)}}((?:- *){3,}|(?:_ *){3,}|(?:\\* *){3,})(?:\\n+|$)`),r=new RegExp(`^ {0,${Math.min(3,h-1)}}(?:\`\`\`|~~~)`),i=new RegExp(`^ {0,${Math.min(3,h-1)}}#`);for(;e;){const a=e.split("\n",1)[0];if(c=a,this.options.pedantic&&(c=c.replace(/^ {1,4}(?=( {4})*[^ ])/g,"  ")),r.test(c))break;if(i.test(c))break;if(t.test(c))break;if(n.test(e))break;if(c.search(/[^ ]/)>=h||!c.trim())o+="\n"+c.slice(h);else{if(p)break;if(s.search(/[^ ]/)>=4)break;if(r.test(s))break;if(i.test(s))break;if(n.test(s))break;o+="\n"+c}p||c.trim()||(p=!0),l+=a+"\n",e=e.substring(a.length+1),s=c.slice(h)}}r.loose||(a?r.loose=!0:/\n *\n *$/.test(l)&&(a=!0));let u,k=null;this.options.gfm&&(k=/^\[[ xX]\] /.exec(o),k&&(u="[ ] "!==k[0],o=o.replace(/^\[[ xX]\] +/,""))),r.items.push({type:"list_item",raw:l,task:!!k,checked:u,loose:!1,text:o,tokens:[]}),r.raw+=l}r.items[r.items.length-1].raw=l.trimEnd(),r.items[r.items.length-1].text=o.trimEnd(),r.raw=r.raw.trimEnd();for(let e=0;e<r.items.length;e++)if(this.lexer.state.top=!1,r.items[e].tokens=this.lexer.blockTokens(r.items[e].text,[]),!r.loose){const t=r.items[e].tokens.filter((e=>"space"===e.type)),n=t.length>0&&t.some((e=>/\n.*\n/.test(e.raw)));r.loose=n}if(r.loose)for(let e=0;e<r.items.length;e++)r.items[e].loose=!0;return r}}html(e){const t=this.rules.block.html.exec(e);if(t){return{type:"html",block:!0,raw:t[0],pre:"pre"===t[1]||"script"===t[1]||"style"===t[1],text:t[0]}}}def(e){const t=this.rules.block.def.exec(e);if(t){const e=t[1].toLowerCase().replace(/\s+/g," "),n=t[2]?t[2].replace(/^<(.*)>$/,"$1").replace(this.rules.inline.anyPunctuation,"$1"):"",s=t[3]?t[3].substring(1,t[3].length-1).replace(this.rules.inline.anyPunctuation,"$1"):t[3];return{type:"def",tag:e,raw:t[0],href:n,title:s}}}table(e){const t=this.rules.block.table.exec(e);if(!t)return;if(!/[:|]/.test(t[2]))return;const n=d(t[1]),s=t[2].replace(/^\||\| *$/g,"").split("|"),r=t[3]&&t[3].trim()?t[3].replace(/\n[ \t]*$/,"").split("\n"):[],i={type:"table",raw:t[0],header:[],align:[],rows:[]};if(n.length===s.length){for(const e of s)/^ *-+: *$/.test(e)?i.align.push("right"):/^ *:-+: *$/.test(e)?i.align.push("center"):/^ *:-+ *$/.test(e)?i.align.push("left"):i.align.push(null);for(const e of n)i.header.push({text:e,tokens:this.lexer.inline(e)});for(const e of r)i.rows.push(d(e,i.header.length).map((e=>({text:e,tokens:this.lexer.inline(e)}))));return i}}lheading(e){const t=this.rules.block.lheading.exec(e);if(t)return{type:"heading",raw:t[0],depth:"="===t[2].charAt(0)?1:2,text:t[1],tokens:this.lexer.inline(t[1])}}paragraph(e){const t=this.rules.block.paragraph.exec(e);if(t){const e="\n"===t[1].charAt(t[1].length-1)?t[1].slice(0,-1):t[1];return{type:"paragraph",raw:t[0],text:e,tokens:this.lexer.inline(e)}}}text(e){const t=this.rules.block.text.exec(e);if(t)return{type:"text",raw:t[0],text:t[0],tokens:this.lexer.inline(t[0])}}escape(e){const t=this.rules.inline.escape.exec(e);if(t)return{type:"escape",raw:t[0],text:c(t[1])}}tag(e){const t=this.rules.inline.tag.exec(e);if(t)return!this.lexer.state.inLink&&/^<a /i.test(t[0])?this.lexer.state.inLink=!0:this.lexer.state.inLink&&/^<\/a>/i.test(t[0])&&(this.lexer.state.inLink=!1),!this.lexer.state.inRawBlock&&/^<(pre|code|kbd|script)(\s|>)/i.test(t[0])?this.lexer.state.inRawBlock=!0:this.lexer.state.inRawBlock&&/^<\/(pre|code|kbd|script)(\s|>)/i.test(t[0])&&(this.lexer.state.inRawBlock=!1),{type:"html",raw:t[0],inLink:this.lexer.state.inLink,inRawBlock:this.lexer.state.inRawBlock,block:!1,text:t[0]}}link(e){const t=this.rules.inline.link.exec(e);if(t){const e=t[2].trim();if(!this.options.pedantic&&/^</.test(e)){if(!/>$/.test(e))return;const t=x(e.slice(0,-1),"\\");if((e.length-t.length)%2==0)return}else{const e=function(e,t){if(-1===e.indexOf(t[1]))return-1;let n=0;for(let s=0;s<e.length;s++)if("\\"===e[s])s++;else if(e[s]===t[0])n++;else if(e[s]===t[1]&&(n--,n<0))return s;return-1}(t[2],"()");if(e>-1){const n=(0===t[0].indexOf("!")?5:4)+t[1].length+e;t[2]=t[2].substring(0,e),t[0]=t[0].substring(0,n).trim(),t[3]=""}}let n=t[2],s="";if(this.options.pedantic){const e=/^([^'"]*[^\s])\s+(['"])(.*)\2/.exec(n);e&&(n=e[1],s=e[3])}else s=t[3]?t[3].slice(1,-1):"";return n=n.trim(),/^</.test(n)&&(n=this.options.pedantic&&!/>$/.test(e)?n.slice(1):n.slice(1,-1)),b(t,{href:n?n.replace(this.rules.inline.anyPunctuation,"$1"):n,title:s?s.replace(this.rules.inline.anyPunctuation,"$1"):s},t[0],this.lexer)}}reflink(e,t){let n;if((n=this.rules.inline.reflink.exec(e))||(n=this.rules.inline.nolink.exec(e))){const e=t[(n[2]||n[1]).replace(/\s+/g," ").toLowerCase()];if(!e){const e=n[0].charAt(0);return{type:"text",raw:e,text:e}}return b(n,e,n[0],this.lexer)}}emStrong(e,t,n=""){let s=this.rules.inline.emStrongLDelim.exec(e);if(!s)return;if(s[3]&&n.match(/[\p{L}\p{N}]/u))return;if(!(s[1]||s[2]||"")||!n||this.rules.inline.punctuation.exec(n)){const n=[...s[0]].length-1;let r,i,l=n,o=0;const a="*"===s[0][0]?this.rules.inline.emStrongRDelimAst:this.rules.inline.emStrongRDelimUnd;for(a.lastIndex=0,t=t.slice(-1*e.length+n);null!=(s=a.exec(t));){if(r=s[1]||s[2]||s[3]||s[4]||s[5]||s[6],!r)continue;if(i=[...r].length,s[3]||s[4]){l+=i;continue}if((s[5]||s[6])&&n%3&&!((n+i)%3)){o+=i;continue}if(l-=i,l>0)continue;i=Math.min(i,i+l+o);const t=[...s[0]][0].length,a=e.slice(0,n+s.index+t+i);if(Math.min(n,i)%2){const e=a.slice(1,-1);return{type:"em",raw:a,text:e,tokens:this.lexer.inlineTokens(e)}}const c=a.slice(2,-2);return{type:"strong",raw:a,text:c,tokens:this.lexer.inlineTokens(c)}}}}codespan(e){const t=this.rules.inline.code.exec(e);if(t){let e=t[2].replace(/\n/g," ");const n=/[^ ]/.test(e),s=/^ /.test(e)&&/ $/.test(e);return n&&s&&(e=e.substring(1,e.length-1)),e=c(e,!0),{type:"codespan",raw:t[0],text:e}}}br(e){const t=this.rules.inline.br.exec(e);if(t)return{type:"br",raw:t[0]}}del(e){const t=this.rules.inline.del.exec(e);if(t)return{type:"del",raw:t[0],text:t[2],tokens:this.lexer.inlineTokens(t[2])}}autolink(e){const t=this.rules.inline.autolink.exec(e);if(t){let e,n;return"@"===t[2]?(e=c(t[1]),n="mailto:"+e):(e=c(t[1]),n=e),{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}url(e){let t;if(t=this.rules.inline.url.exec(e)){let e,n;if("@"===t[2])e=c(t[0]),n="mailto:"+e;else{let s;do{s=t[0],t[0]=this.rules.inline._backpedal.exec(t[0])?.[0]??""}while(s!==t[0]);e=c(t[0]),n="www."===t[1]?"http://"+t[0]:t[0]}return{type:"link",raw:t[0],text:e,href:n,tokens:[{type:"text",raw:e,text:e}]}}}inlineText(e){const t=this.rules.inline.text.exec(e);if(t){let e;return e=this.lexer.state.inRawBlock?t[0]:c(t[0]),{type:"text",raw:t[0],text:e}}}}const m=/^ {0,3}((?:-[\t ]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})(?:\n+|$)/,y=/(?:[*+-]|\d{1,9}[.)])/,$=k(/^(?!bull |blockCode|fences|blockquote|heading|html)((?:.|\n(?!\s*?\n|bull |blockCode|fences|blockquote|heading|html))+?)\n {0,3}(=+|-+) *(?:\n+|$)/).replace(/bull/g,y).replace(/blockCode/g,/ {4}/).replace(/fences/g,/ {0,3}(?:`{3,}|~{3,})/).replace(/blockquote/g,/ {0,3}>/).replace(/heading/g,/ {0,3}#{1,6}/).replace(/html/g,/ {0,3}<[^\n>]+>\n/).getRegex(),z=/^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html|table| +\n)[^\n]+)*)/,T=/(?!\s*\])(?:\\.|[^\[\]\\])+/,R=k(/^ {0,3}\[(label)\]: *(?:\n *)?([^<\s][^\s]*|<.*?>)(?:(?: +(?:\n *)?| *\n *)(title))? *(?:\n+|$)/).replace("label",T).replace("title",/(?:"(?:\\"?|[^"\\])*"|'[^'\n]*(?:\n[^'\n]+)*\n?'|\([^()]*\))/).getRegex(),_=k(/^( {0,3}bull)([ \t][^\n]+?)?(?:\n|$)/).replace(/bull/g,y).getRegex(),A="address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul",S=/<\!--(?:-?>|[\s\S]*?(?:-->|$))/,I=k("^ {0,3}(?:<(script|pre|style|textarea)[\\s>][\\s\\S]*?(?:</\\1>[^\\n]*\\n+|$)|comment[^\\n]*(\\n+|$)|<\\?[\\s\\S]*?(?:\\?>\\n*|$)|<![A-Z][\\s\\S]*?(?:>\\n*|$)|<!\\[CDATA\\[[\\s\\S]*?(?:\\]\\]>\\n*|$)|</?(tag)(?: +|\\n|/?>)[\\s\\S]*?(?:(?:\\n *)+\\n|$)|<(?!script|pre|style|textarea)([a-z][\\w-]*)(?:attribute)*? */?>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$)|</(?!script|pre|style|textarea)[a-z][\\w-]*\\s*>(?=[ \\t]*(?:\\n|$))[\\s\\S]*?(?:(?:\\n *)+\\n|$))","i").replace("comment",S).replace("tag",A).replace("attribute",/ +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?/).getRegex(),E=k(z).replace("hr",m).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("|table","").replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",A).getRegex(),q={blockquote:k(/^( {0,3}> ?(paragraph|[^\n]*)(?:\n|$))+/).replace("paragraph",E).getRegex(),code:/^( {4}[^\n]+(?:\n(?: *(?:\n|$))*)?)+/,def:R,fences:/^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)/,heading:/^ {0,3}(#{1,6})(?=\s|$)(.*)(?:\n+|$)/,hr:m,html:I,lheading:$,list:_,newline:/^(?: *(?:\n|$))+/,paragraph:E,table:f,text:/^[^\n]+/},Z=k("^ *([^\\n ].*)\\n {0,3}((?:\\| *)?:?-+:? *(?:\\| *:?-+:? *)*(?:\\| *)?)(?:\\n((?:(?! *\\n|hr|heading|blockquote|code|fences|list|html).*(?:\\n|$))*)\\n*|$)").replace("hr",m).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("blockquote"," {0,3}>").replace("code"," {4}[^\\n]").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",A).getRegex(),L={...q,table:Z,paragraph:k(z).replace("hr",m).replace("heading"," {0,3}#{1,6}(?:\\s|$)").replace("|lheading","").replace("table",Z).replace("blockquote"," {0,3}>").replace("fences"," {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n").replace("list"," {0,3}(?:[*+-]|1[.)]) ").replace("html","</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|textarea|!--)").replace("tag",A).getRegex()},P={...q,html:k("^ *(?:comment *(?:\\n|\\s*$)|<(tag)[\\s\\S]+?</\\1> *(?:\\n{2,}|\\s*$)|<tag(?:\"[^\"]*\"|'[^']*'|\\s[^'\"/>\\s]*)*?/?> *(?:\\n{2,}|\\s*$))").replace("comment",S).replace(/tag/g,"(?!(?:a|em|strong|small|s|cite|q|dfn|abbr|data|time|code|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo|span|br|wbr|ins|del|img)\\b)\\w+(?!:|[^\\w\\s@]*@)\\b").getRegex(),def:/^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +(["(][^\n]+[")]))? *(?:\n+|$)/,heading:/^(#{1,6})(.*)(?:\n+|$)/,fences:f,lheading:/^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,paragraph:k(z).replace("hr",m).replace("heading"," *#{1,6} *[^\n]").replace("lheading",$).replace("|table","").replace("blockquote"," {0,3}>").replace("|fences","").replace("|list","").replace("|html","").replace("|tag","").getRegex()},Q=/^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/,v=/^( {2,}|\\)\n(?!\s*$)/,B="\\p{P}\\p{S}",C=k(/^((?![*_])[\spunctuation])/,"u").replace(/punctuation/g,B).getRegex(),M=k(/^(?:\*+(?:((?!\*)[punct])|[^\s*]))|^_+(?:((?!_)[punct])|([^\s_]))/,"u").replace(/punct/g,B).getRegex(),O=k("^[^_*]*?__[^_*]*?\\*[^_*]*?(?=__)|[^*]+(?=[^*])|(?!\\*)[punct](\\*+)(?=[\\s]|$)|[^punct\\s](\\*+)(?!\\*)(?=[punct\\s]|$)|(?!\\*)[punct\\s](\\*+)(?=[^punct\\s])|[\\s](\\*+)(?!\\*)(?=[punct])|(?!\\*)[punct](\\*+)(?!\\*)(?=[punct])|[^punct\\s](\\*+)(?=[^punct\\s])","gu").replace(/punct/g,B).getRegex(),D=k("^[^_*]*?\\*\\*[^_*]*?_[^_*]*?(?=\\*\\*)|[^_]+(?=[^_])|(?!_)[punct](_+)(?=[\\s]|$)|[^punct\\s](_+)(?!_)(?=[punct\\s]|$)|(?!_)[punct\\s](_+)(?=[^punct\\s])|[\\s](_+)(?!_)(?=[punct])|(?!_)[punct](_+)(?!_)(?=[punct])","gu").replace(/punct/g,B).getRegex(),j=k(/\\([punct])/,"gu").replace(/punct/g,B).getRegex(),H=k(/^<(scheme:[^\s\x00-\x1f<>]*|email)>/).replace("scheme",/[a-zA-Z][a-zA-Z0-9+.-]{1,31}/).replace("email",/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+(@)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+(?![-_])/).getRegex(),U=k(S).replace("(?:--\x3e|$)","--\x3e").getRegex(),X=k("^comment|^</[a-zA-Z][\\w:-]*\\s*>|^<[a-zA-Z][\\w-]*(?:attribute)*?\\s*/?>|^<\\?[\\s\\S]*?\\?>|^<![a-zA-Z]+\\s[\\s\\S]*?>|^<!\\[CDATA\\[[\\s\\S]*?\\]\\]>").replace("comment",U).replace("attribute",/\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?/).getRegex(),F=/(?:\[(?:\\.|[^\[\]\\])*\]|\\.|`[^`]*`|[^\[\]\\`])*?/,N=k(/^!?\[(label)\]\(\s*(href)(?:\s+(title))?\s*\)/).replace("label",F).replace("href",/<(?:\\.|[^\n<>\\])+>|[^\s\x00-\x1f]*/).replace("title",/"(?:\\"?|[^"\\])*"|'(?:\\'?|[^'\\])*'|\((?:\\\)?|[^)\\])*\)/).getRegex(),G=k(/^!?\[(label)\]\[(ref)\]/).replace("label",F).replace("ref",T).getRegex(),J=k(/^!?\[(ref)\](?:\[\])?/).replace("ref",T).getRegex(),K={_backpedal:f,anyPunctuation:j,autolink:H,blockSkip:/\[[^[\]]*?\]\([^\(\)]*?\)|`[^`]*?`|<[^<>]*?>/g,br:v,code:/^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/,del:f,emStrongLDelim:M,emStrongRDelimAst:O,emStrongRDelimUnd:D,escape:Q,link:N,nolink:J,punctuation:C,reflink:G,reflinkSearch:k("reflink|nolink(?!\\()","g").replace("reflink",G).replace("nolink",J).getRegex(),tag:X,text:/^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/,url:f},V={...K,link:k(/^!?\[(label)\]\((.*?)\)/).replace("label",F).getRegex(),reflink:k(/^!?\[(label)\]\s*\[([^\]]*)\]/).replace("label",F).getRegex()},W={...K,escape:k(Q).replace("])","~|])").getRegex(),url:k(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/,"i").replace("email",/[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),_backpedal:/(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,del:/^(~~?)(?=[^\s~])([\s\S]*?[^\s~])\1(?=[^~]|$)/,text:/^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))/},Y={...W,br:k(v).replace("{2,}","*").getRegex(),text:k(W.text).replace("\\b_","\\b_| {2,}\\n").replace(/\{2,\}/g,"*").getRegex()},ee={normal:q,gfm:L,pedantic:P},te={normal:K,gfm:W,breaks:Y,pedantic:V};class ne{tokens;options;state;tokenizer;inlineQueue;constructor(t){this.tokens=[],this.tokens.links=Object.create(null),this.options=t||e.defaults,this.options.tokenizer=this.options.tokenizer||new w,this.tokenizer=this.options.tokenizer,this.tokenizer.options=this.options,this.tokenizer.lexer=this,this.inlineQueue=[],this.state={inLink:!1,inRawBlock:!1,top:!0};const n={block:ee.normal,inline:te.normal};this.options.pedantic?(n.block=ee.pedantic,n.inline=te.pedantic):this.options.gfm&&(n.block=ee.gfm,this.options.breaks?n.inline=te.breaks:n.inline=te.gfm),this.tokenizer.rules=n}static get rules(){return{block:ee,inline:te}}static lex(e,t){return new ne(t).lex(e)}static lexInline(e,t){return new ne(t).inlineTokens(e)}lex(e){e=e.replace(/\r\n|\r/g,"\n"),this.blockTokens(e,this.tokens);for(let e=0;e<this.inlineQueue.length;e++){const t=this.inlineQueue[e];this.inlineTokens(t.src,t.tokens)}return this.inlineQueue=[],this.tokens}blockTokens(e,t=[]){let n,s,r,i;for(e=this.options.pedantic?e.replace(/\t/g,"    ").replace(/^ +$/gm,""):e.replace(/^( *)(\t+)/gm,((e,t,n)=>t+"    ".repeat(n.length)));e;)if(!(this.options.extensions&&this.options.extensions.block&&this.options.extensions.block.some((s=>!!(n=s.call({lexer:this},e,t))&&(e=e.substring(n.raw.length),t.push(n),!0)))))if(n=this.tokenizer.space(e))e=e.substring(n.raw.length),1===n.raw.length&&t.length>0?t[t.length-1].raw+="\n":t.push(n);else if(n=this.tokenizer.code(e))e=e.substring(n.raw.length),s=t[t.length-1],!s||"paragraph"!==s.type&&"text"!==s.type?t.push(n):(s.raw+="\n"+n.raw,s.text+="\n"+n.text,this.inlineQueue[this.inlineQueue.length-1].src=s.text);else if(n=this.tokenizer.fences(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.heading(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.hr(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.blockquote(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.list(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.html(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.def(e))e=e.substring(n.raw.length),s=t[t.length-1],!s||"paragraph"!==s.type&&"text"!==s.type?this.tokens.links[n.tag]||(this.tokens.links[n.tag]={href:n.href,title:n.title}):(s.raw+="\n"+n.raw,s.text+="\n"+n.raw,this.inlineQueue[this.inlineQueue.length-1].src=s.text);else if(n=this.tokenizer.table(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.lheading(e))e=e.substring(n.raw.length),t.push(n);else{if(r=e,this.options.extensions&&this.options.extensions.startBlock){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startBlock.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(r=e.substring(0,t+1))}if(this.state.top&&(n=this.tokenizer.paragraph(r)))s=t[t.length-1],i&&"paragraph"===s.type?(s.raw+="\n"+n.raw,s.text+="\n"+n.text,this.inlineQueue.pop(),this.inlineQueue[this.inlineQueue.length-1].src=s.text):t.push(n),i=r.length!==e.length,e=e.substring(n.raw.length);else if(n=this.tokenizer.text(e))e=e.substring(n.raw.length),s=t[t.length-1],s&&"text"===s.type?(s.raw+="\n"+n.raw,s.text+="\n"+n.text,this.inlineQueue.pop(),this.inlineQueue[this.inlineQueue.length-1].src=s.text):t.push(n);else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}return this.state.top=!0,t}inline(e,t=[]){return this.inlineQueue.push({src:e,tokens:t}),t}inlineTokens(e,t=[]){let n,s,r,i,l,o,a=e;if(this.tokens.links){const e=Object.keys(this.tokens.links);if(e.length>0)for(;null!=(i=this.tokenizer.rules.inline.reflinkSearch.exec(a));)e.includes(i[0].slice(i[0].lastIndexOf("[")+1,-1))&&(a=a.slice(0,i.index)+"["+"a".repeat(i[0].length-2)+"]"+a.slice(this.tokenizer.rules.inline.reflinkSearch.lastIndex))}for(;null!=(i=this.tokenizer.rules.inline.blockSkip.exec(a));)a=a.slice(0,i.index)+"["+"a".repeat(i[0].length-2)+"]"+a.slice(this.tokenizer.rules.inline.blockSkip.lastIndex);for(;null!=(i=this.tokenizer.rules.inline.anyPunctuation.exec(a));)a=a.slice(0,i.index)+"++"+a.slice(this.tokenizer.rules.inline.anyPunctuation.lastIndex);for(;e;)if(l||(o=""),l=!1,!(this.options.extensions&&this.options.extensions.inline&&this.options.extensions.inline.some((s=>!!(n=s.call({lexer:this},e,t))&&(e=e.substring(n.raw.length),t.push(n),!0)))))if(n=this.tokenizer.escape(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.tag(e))e=e.substring(n.raw.length),s=t[t.length-1],s&&"text"===n.type&&"text"===s.type?(s.raw+=n.raw,s.text+=n.text):t.push(n);else if(n=this.tokenizer.link(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.reflink(e,this.tokens.links))e=e.substring(n.raw.length),s=t[t.length-1],s&&"text"===n.type&&"text"===s.type?(s.raw+=n.raw,s.text+=n.text):t.push(n);else if(n=this.tokenizer.emStrong(e,a,o))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.codespan(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.br(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.del(e))e=e.substring(n.raw.length),t.push(n);else if(n=this.tokenizer.autolink(e))e=e.substring(n.raw.length),t.push(n);else if(this.state.inLink||!(n=this.tokenizer.url(e))){if(r=e,this.options.extensions&&this.options.extensions.startInline){let t=1/0;const n=e.slice(1);let s;this.options.extensions.startInline.forEach((e=>{s=e.call({lexer:this},n),"number"==typeof s&&s>=0&&(t=Math.min(t,s))})),t<1/0&&t>=0&&(r=e.substring(0,t+1))}if(n=this.tokenizer.inlineText(r))e=e.substring(n.raw.length),"_"!==n.raw.slice(-1)&&(o=n.raw.slice(-1)),l=!0,s=t[t.length-1],s&&"text"===s.type?(s.raw+=n.raw,s.text+=n.text):t.push(n);else if(e){const t="Infinite loop on byte: "+e.charCodeAt(0);if(this.options.silent){console.error(t);break}throw new Error(t)}}else e=e.substring(n.raw.length),t.push(n);return t}}class se{options;constructor(t){this.options=t||e.defaults}code(e,t,n){const s=(t||"").match(/^\S*/)?.[0];return e=e.replace(/\n$/,"")+"\n",s?'<pre><code class="language-'+c(s)+'">'+(n?e:c(e,!0))+"</code></pre>\n":"<pre><code>"+(n?e:c(e,!0))+"</code></pre>\n"}blockquote(e){return`<blockquote>\n${e}</blockquote>\n`}html(e,t){return e}heading(e,t,n){return`<h${t}>${e}</h${t}>\n`}hr(){return"<hr>\n"}list(e,t,n){const s=t?"ol":"ul";return"<"+s+(t&&1!==n?' start="'+n+'"':"")+">\n"+e+"</"+s+">\n"}listitem(e,t,n){return`<li>${e}</li>\n`}checkbox(e){return"<input "+(e?'checked="" ':"")+'disabled="" type="checkbox">'}paragraph(e){return`<p>${e}</p>\n`}table(e,t){return t&&(t=`<tbody>${t}</tbody>`),"<table>\n<thead>\n"+e+"</thead>\n"+t+"</table>\n"}tablerow(e){return`<tr>\n${e}</tr>\n`}tablecell(e,t){const n=t.header?"th":"td";return(t.align?`<${n} align="${t.align}">`:`<${n}>`)+e+`</${n}>\n`}strong(e){return`<strong>${e}</strong>`}em(e){return`<em>${e}</em>`}codespan(e){return`<code>${e}</code>`}br(){return"<br>"}del(e){return`<del>${e}</del>`}link(e,t,n){const s=g(e);if(null===s)return n;let r='<a href="'+(e=s)+'"';return t&&(r+=' title="'+t+'"'),r+=">"+n+"</a>",r}image(e,t,n){const s=g(e);if(null===s)return n;let r=`<img src="${e=s}" alt="${n}"`;return t&&(r+=` title="${t}"`),r+=">",r}text(e){return e}}class re{strong(e){return e}em(e){return e}codespan(e){return e}del(e){return e}html(e){return e}text(e){return e}link(e,t,n){return""+n}image(e,t,n){return""+n}br(){return""}}class ie{options;renderer;textRenderer;constructor(t){this.options=t||e.defaults,this.options.renderer=this.options.renderer||new se,this.renderer=this.options.renderer,this.renderer.options=this.options,this.textRenderer=new re}static parse(e,t){return new ie(t).parse(e)}static parseInline(e,t){return new ie(t).parseInline(e)}parse(e,t=!0){let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions&&this.options.extensions.renderers&&this.options.extensions.renderers[r.type]){const e=r,t=this.options.extensions.renderers[e.type].call({parser:this},e);if(!1!==t||!["space","hr","heading","code","table","blockquote","list","html","paragraph","text"].includes(e.type)){n+=t||"";continue}}switch(r.type){case"space":continue;case"hr":n+=this.renderer.hr();continue;case"heading":{const e=r;n+=this.renderer.heading(this.parseInline(e.tokens),e.depth,p(this.parseInline(e.tokens,this.textRenderer)));continue}case"code":{const e=r;n+=this.renderer.code(e.text,e.lang,!!e.escaped);continue}case"table":{const e=r;let t="",s="";for(let t=0;t<e.header.length;t++)s+=this.renderer.tablecell(this.parseInline(e.header[t].tokens),{header:!0,align:e.align[t]});t+=this.renderer.tablerow(s);let i="";for(let t=0;t<e.rows.length;t++){const n=e.rows[t];s="";for(let t=0;t<n.length;t++)s+=this.renderer.tablecell(this.parseInline(n[t].tokens),{header:!1,align:e.align[t]});i+=this.renderer.tablerow(s)}n+=this.renderer.table(t,i);continue}case"blockquote":{const e=r,t=this.parse(e.tokens);n+=this.renderer.blockquote(t);continue}case"list":{const e=r,t=e.ordered,s=e.start,i=e.loose;let l="";for(let t=0;t<e.items.length;t++){const n=e.items[t],s=n.checked,r=n.task;let o="";if(n.task){const e=this.renderer.checkbox(!!s);i?n.tokens.length>0&&"paragraph"===n.tokens[0].type?(n.tokens[0].text=e+" "+n.tokens[0].text,n.tokens[0].tokens&&n.tokens[0].tokens.length>0&&"text"===n.tokens[0].tokens[0].type&&(n.tokens[0].tokens[0].text=e+" "+n.tokens[0].tokens[0].text)):n.tokens.unshift({type:"text",text:e+" "}):o+=e+" "}o+=this.parse(n.tokens,i),l+=this.renderer.listitem(o,r,!!s)}n+=this.renderer.list(l,t,s);continue}case"html":{const e=r;n+=this.renderer.html(e.text,e.block);continue}case"paragraph":{const e=r;n+=this.renderer.paragraph(this.parseInline(e.tokens));continue}case"text":{let i=r,l=i.tokens?this.parseInline(i.tokens):i.text;for(;s+1<e.length&&"text"===e[s+1].type;)i=e[++s],l+="\n"+(i.tokens?this.parseInline(i.tokens):i.text);n+=t?this.renderer.paragraph(l):l;continue}default:{const e='Token with "'+r.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}parseInline(e,t){t=t||this.renderer;let n="";for(let s=0;s<e.length;s++){const r=e[s];if(this.options.extensions&&this.options.extensions.renderers&&this.options.extensions.renderers[r.type]){const e=this.options.extensions.renderers[r.type].call({parser:this},r);if(!1!==e||!["escape","html","link","image","strong","em","codespan","br","del","text"].includes(r.type)){n+=e||"";continue}}switch(r.type){case"escape":{const e=r;n+=t.text(e.text);break}case"html":{const e=r;n+=t.html(e.text);break}case"link":{const e=r;n+=t.link(e.href,e.title,this.parseInline(e.tokens,t));break}case"image":{const e=r;n+=t.image(e.href,e.title,e.text);break}case"strong":{const e=r;n+=t.strong(this.parseInline(e.tokens,t));break}case"em":{const e=r;n+=t.em(this.parseInline(e.tokens,t));break}case"codespan":{const e=r;n+=t.codespan(e.text);break}case"br":n+=t.br();break;case"del":{const e=r;n+=t.del(this.parseInline(e.tokens,t));break}case"text":{const e=r;n+=t.text(e.text);break}default:{const e='Token with "'+r.type+'" type was not found.';if(this.options.silent)return console.error(e),"";throw new Error(e)}}}return n}}class le{options;constructor(t){this.options=t||e.defaults}static passThroughHooks=new Set(["preprocess","postprocess","processAllTokens"]);preprocess(e){return e}postprocess(e){return e}processAllTokens(e){return e}}class oe{defaults={async:!1,breaks:!1,extensions:null,gfm:!0,hooks:null,pedantic:!1,renderer:null,silent:!1,tokenizer:null,walkTokens:null};options=this.setOptions;parse=this.#e(ne.lex,ie.parse);parseInline=this.#e(ne.lexInline,ie.parseInline);Parser=ie;Renderer=se;TextRenderer=re;Lexer=ne;Tokenizer=w;Hooks=le;constructor(...e){this.use(...e)}walkTokens(e,t){let n=[];for(const s of e)switch(n=n.concat(t.call(this,s)),s.type){case"table":{const e=s;for(const s of e.header)n=n.concat(this.walkTokens(s.tokens,t));for(const s of e.rows)for(const e of s)n=n.concat(this.walkTokens(e.tokens,t));break}case"list":{const e=s;n=n.concat(this.walkTokens(e.items,t));break}default:{const e=s;this.defaults.extensions?.childTokens?.[e.type]?this.defaults.extensions.childTokens[e.type].forEach((s=>{const r=e[s].flat(1/0);n=n.concat(this.walkTokens(r,t))})):e.tokens&&(n=n.concat(this.walkTokens(e.tokens,t)))}}return n}use(...e){const t=this.defaults.extensions||{renderers:{},childTokens:{}};return e.forEach((e=>{const n={...e};if(n.async=this.defaults.async||n.async||!1,e.extensions&&(e.extensions.forEach((e=>{if(!e.name)throw new Error("extension name required");if("renderer"in e){const n=t.renderers[e.name];t.renderers[e.name]=n?function(...t){let s=e.renderer.apply(this,t);return!1===s&&(s=n.apply(this,t)),s}:e.renderer}if("tokenizer"in e){if(!e.level||"block"!==e.level&&"inline"!==e.level)throw new Error("extension level must be 'block' or 'inline'");const n=t[e.level];n?n.unshift(e.tokenizer):t[e.level]=[e.tokenizer],e.start&&("block"===e.level?t.startBlock?t.startBlock.push(e.start):t.startBlock=[e.start]:"inline"===e.level&&(t.startInline?t.startInline.push(e.start):t.startInline=[e.start]))}"childTokens"in e&&e.childTokens&&(t.childTokens[e.name]=e.childTokens)})),n.extensions=t),e.renderer){const t=this.defaults.renderer||new se(this.defaults);for(const n in e.renderer){if(!(n in t))throw new Error(`renderer '${n}' does not exist`);if("options"===n)continue;const s=n,r=e.renderer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n||""}}n.renderer=t}if(e.tokenizer){const t=this.defaults.tokenizer||new w(this.defaults);for(const n in e.tokenizer){if(!(n in t))throw new Error(`tokenizer '${n}' does not exist`);if(["options","rules","lexer"].includes(n))continue;const s=n,r=e.tokenizer[s],i=t[s];t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.tokenizer=t}if(e.hooks){const t=this.defaults.hooks||new le;for(const n in e.hooks){if(!(n in t))throw new Error(`hook '${n}' does not exist`);if("options"===n)continue;const s=n,r=e.hooks[s],i=t[s];le.passThroughHooks.has(n)?t[s]=e=>{if(this.defaults.async)return Promise.resolve(r.call(t,e)).then((e=>i.call(t,e)));const n=r.call(t,e);return i.call(t,n)}:t[s]=(...e)=>{let n=r.apply(t,e);return!1===n&&(n=i.apply(t,e)),n}}n.hooks=t}if(e.walkTokens){const t=this.defaults.walkTokens,s=e.walkTokens;n.walkTokens=function(e){let n=[];return n.push(s.call(this,e)),t&&(n=n.concat(t.call(this,e))),n}}this.defaults={...this.defaults,...n}})),this}setOptions(e){return this.defaults={...this.defaults,...e},this}lexer(e,t){return ne.lex(e,t??this.defaults)}parser(e,t){return ie.parse(e,t??this.defaults)}#e(e,t){return(n,s)=>{const r={...s},i={...this.defaults,...r};!0===this.defaults.async&&!1===r.async&&(i.silent||console.warn("marked(): The async option was set to true by an extension. The async: false option sent to parse will be ignored."),i.async=!0);const l=this.#t(!!i.silent,!!i.async);if(null==n)return l(new Error("marked(): input parameter is undefined or null"));if("string"!=typeof n)return l(new Error("marked(): input parameter is of type "+Object.prototype.toString.call(n)+", string expected"));if(i.hooks&&(i.hooks.options=i),i.async)return Promise.resolve(i.hooks?i.hooks.preprocess(n):n).then((t=>e(t,i))).then((e=>i.hooks?i.hooks.processAllTokens(e):e)).then((e=>i.walkTokens?Promise.all(this.walkTokens(e,i.walkTokens)).then((()=>e)):e)).then((e=>t(e,i))).then((e=>i.hooks?i.hooks.postprocess(e):e)).catch(l);try{i.hooks&&(n=i.hooks.preprocess(n));let s=e(n,i);i.hooks&&(s=i.hooks.processAllTokens(s)),i.walkTokens&&this.walkTokens(s,i.walkTokens);let r=t(s,i);return i.hooks&&(r=i.hooks.postprocess(r)),r}catch(e){return l(e)}}}#t(e,t){return n=>{if(n.message+="\nPlease report this to https://github.com/markedjs/marked.",e){const e="<p>An error occurred:</p><pre>"+c(n.message+"",!0)+"</pre>";return t?Promise.resolve(e):e}if(t)return Promise.reject(n);throw n}}}const ae=new oe;function ce(e,t){return ae.parse(e,t)}ce.options=ce.setOptions=function(e){return ae.setOptions(e),ce.defaults=ae.defaults,n(ce.defaults),ce},ce.getDefaults=t,ce.defaults=e.defaults,ce.use=function(...e){return ae.use(...e),ce.defaults=ae.defaults,n(ce.defaults),ce},ce.walkTokens=function(e,t){return ae.walkTokens(e,t)},ce.parseInline=ae.parseInline,ce.Parser=ie,ce.parser=ie.parse,ce.Renderer=se,ce.TextRenderer=re,ce.Lexer=ne,ce.lexer=ne.lex,ce.Tokenizer=w,ce.Hooks=le,ce.parse=ce;const he=ce.options,pe=ce.setOptions,ue=ce.use,ke=ce.walkTokens,ge=ce.parseInline,fe=ce,de=ie.parse,xe=ne.lex;e.Hooks=le,e.Lexer=ne,e.Marked=oe,e.Parser=ie,e.Renderer=se,e.TextRenderer=re,e.Tokenizer=w,e.getDefaults=t,e.lexer=xe,e.marked=ce,e.options=he,e.parse=fe,e.parseInline=ge,e.parser=de,e.setOptions=pe,e.use=ue,e.walkTokens=ke}));
 
 </script>
+<script src="voice-core.js"></script>
 <script>
 (function(){
   "use strict";
@@ -1264,75 +1285,11 @@ body.hide-done .todo-sec li.task.done{display:none}
     if(!inField && e.key === "/"){ e.preventDefault(); q.focus(); }
   });
 
-  /* ---------- voice notes ---------- */
-  var CLAUDE_MODEL = "claude-sonnet-5-5";
-  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  var DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], BYDAY = ["SU","MO","TU","WE","TH","FR","SA"];
+  /* ---------- voice notes (shared parts live in voice-core.js) ---------- */
+  var K = window.KNV;
+  var MON = K.MON, okTime = K.okTime, parseYmd = K.parseYmd, alarmLine = K.alarmLine, eventLine = K.eventLine, parseReminder = K.parseReminder, gcalUrl = K.gcalUrl;
   var INBOX_TEXT = "## Inbox\n<!-- keep: label: Inbox; blurb: Voice notes waiting to be sorted. -->\n\nVoice notes land here when they don't clearly belong anywhere else, or when you save them without sorting. Move them with Edit section.";
   var REM_TEXT = "## Alarms and reminders\n<!-- keep: label: Alarms; blurb: Alarms and calendar events from your voice notes. Put each in Google Calendar, then tick it off. -->\n\nEach line has a button that opens Google Calendar with it filled in. Tick a line off once it's set.";
-  function pad(n){ return (n < 10 ? "0" : "") + n; }
-  function ymd(d){ return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
-  function parseYmd(s){ var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
-  function fmtDay(d){ return DAYS[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear(); }
-  function okTime(hm){ return /^([01]?\d|2[0-3]):[0-5]\d$/.test(hm || ""); }
-  function fmtTime(hm){ if(!okTime(hm)) return ""; var p = hm.split(":"), h = +p[0]; return (h % 12 || 12) + ":" + p[1] + " " + (h >= 12 ? "pm" : "am"); }
-  function to24(h, mi, ap){ return pad(+h % 12 + (/pm/i.test(ap) ? 12 : 0)) + ":" + mi; }
-  function stamp(d){ return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00"; }
-  function nextDate(hm, test){
-    var now = new Date(), p = (hm || "00:00").split(":"), d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), +p[0], +p[1]);
-    for(var i = 0; i < 9 && (d <= now || (test && !test(d))); i++) d.setDate(d.getDate() + 1);
-    return ymd(d);
-  }
-
-  /* One line of the Alarms section, in a form both people and the app can read back. */
-  function alarmLine(a){
-    var when = fmtTime(a.time), d = parseYmd(a.date);
-    if(a.repeat === "daily") when += ", every day";
-    else if(a.repeat === "weekdays") when += ", every weekday";
-    else if(a.repeat === "weekly") when += ", every " + DAYS[(d || new Date()).getDay()];
-    else if(d) when += ", " + fmtDay(d);
-    return "Alarm " + when + ": " + norm(a.label || "Alarm");
-  }
-  function eventLine(e){
-    var d = parseYmd(e.date), when = "";
-    if(okTime(e.start)) when = fmtTime(e.start) + (okTime(e.end) ? " to " + fmtTime(e.end) : "") + ", ";
-    return "Event " + when + fmtDay(d) + ": " + norm(e.title || "Event") + (norm(e.location || "") ? " (" + norm(e.location) + ")" : "");
-  }
-  function parseReminder(text){
-    var m = /^(Alarm|Event)\s+(.+?):\s+(.+)$/.exec(norm(text)); if(!m) return null;
-    var when = m[2], r = { kind:m[1].toLowerCase(), title:m[3], location:"", recur:"" };
-    if(r.kind === "event"){ var lm = /\s\(([^)]+)\)$/.exec(r.title); if(lm){ r.location = lm[1]; r.title = r.title.slice(0, lm.index); } }
-    var times = []; when.replace(/(\d{1,2}):(\d{2})\s*(am|pm)/gi, function(all, h, mi, ap){ times.push(to24(h, mi, ap)); return all; });
-    r.start = times[0] || ""; r.end = times[1] || "";
-    var dm = /(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})/.exec(when);
-    if(dm){ var mo = MON.map(function(x){ return x.toLowerCase(); }).indexOf(dm[2].toLowerCase()); if(mo >= 0) r.date = ymd(new Date(+dm[3], mo, +dm[1])); }
-    var rep = /every\s+(day|weekday|[A-Za-z]{3})/i.exec(when);
-    if(rep){
-      var w = rep[1].toLowerCase(), di = DAYS.map(function(x){ return x.toLowerCase(); }).indexOf(w.slice(0, 3));
-      if(w === "day"){ r.recur = "FREQ=DAILY"; if(!r.date) r.date = nextDate(r.start); }
-      else if(w === "weekday"){ r.recur = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"; if(!r.date) r.date = nextDate(r.start, function(d){ return d.getDay() > 0 && d.getDay() < 6; }); }
-      else if(di >= 0){ r.recur = "FREQ=WEEKLY;BYDAY=" + BYDAY[di]; if(!r.date) r.date = nextDate(r.start, function(d){ return d.getDay() === di; }); }
-    }
-    if(!r.date){ if(!r.start) return null; r.date = nextDate(r.start); }
-    return r;
-  }
-  function gcalUrl(r){
-    var p = new URLSearchParams(), d = parseYmd(r.date);
-    p.set("action", "TEMPLATE");
-    p.set("text", r.kind === "alarm" ? "Alarm: " + r.title : r.title);
-    if(!okTime(r.start)){ var nx = new Date(d); nx.setDate(nx.getDate() + 1); p.set("dates", ymd(d).replace(/-/g, "") + "/" + ymd(nx).replace(/-/g, "")); }
-    else {
-      var hs = r.start.split(":"), s = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +hs[0], +hs[1]), en;
-      if(okTime(r.end)){ var he = r.end.split(":"); en = new Date(d.getFullYear(), d.getMonth(), d.getDate(), +he[0], +he[1]); if(en <= s) en.setDate(en.getDate() + 1); }
-      else en = new Date(s.getTime() + (r.kind === "alarm" ? 10 : 60) * 60000);
-      p.set("dates", stamp(s) + "/" + stamp(en));
-      try{ p.set("ctz", Intl.DateTimeFormat().resolvedOptions().timeZone); }catch(e){}
-    }
-    p.set("details", r.details || (r.kind === "alarm" ? "Alarm from Keep Notes" : "Added from Keep Notes"));
-    if(r.location) p.set("location", r.location);
-    if(r.recur) p.set("recur", "RRULE:" + r.recur);
-    return "https://calendar.google.com/calendar/render?" + p.toString();
-  }
   function openCal(r){ window.open(gcalUrl(r), "_blank", "noopener"); }
   function decorateReminders(s){
     s.body.querySelectorAll("li.task").forEach(function(li){
@@ -1367,11 +1324,14 @@ body.hide-done .todo-sec li.task.done{display:none}
     else ps.splice(at, 0, text + "\n\n---\n\n");
     return ps.join("");
   }
-  /* items: [{kind:"note"|"todo", target:"s3"|"inbox", text}], alarms/events as from the review. Returns how many lines were added. */
-  function applyVoice(items, alarms, events){
+  /* items: [{kind:"note"|"todo", target:"s3"|"inbox", text}]; map: section id -> {head}. Returns how many lines were added. */
+  function applyVoice(items, alarms, events, map){
+    if(doc === null) return 0;
+    map = map || vSecMap;
     var heads = {}, cur = splitDoc(doc), n = 0;
+    items = items.map(function(it){ return { kind:it.kind, target:it.target, text:it.text }; });
     items.forEach(function(it){
-      if(it.target !== "inbox"){ var h = vSecMap[it.target] && vSecMap[it.target].head; if(!h || !cur.some(function(p){ return p.split("\n")[0] === h; })) it.target = "inbox"; else heads[it.target] = h; }
+      if(it.target !== "inbox"){ var h = map[it.target] && map[it.target].head; if(!h || !cur.some(function(p){ return p.split("\n")[0] === h; })) it.target = "inbox"; else heads[it.target] = h; }
     });
     var md = doc;
     if(items.some(function(it){ return it.target === "inbox"; })) md = ensureLabeled(md, "Inbox", INBOX_TEXT);
@@ -1395,64 +1355,53 @@ body.hide-done .todo-sec li.task.done{display:none}
 
   /* Listening */
   var vDlg = $("voiceDialog"), vText = $("vText"), vLive = $("vLive");
-  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  var rec = null, wantListen = false, vBase = "", vHeard = false, vQuiet = 0, vBusy = false, vSecMap = {}, vRows = null, cancelArmed = false;
+  var NO_SR = "Voice typing isn't available in this browser. Type here, or use your keyboard's microphone.";
+  var lis = null, wantListen = false, vBusy = false, vSecMap = {}, vRows = null, vLast = null, cancelArmed = false, curPending = null;
   function setLive(state, text){ vLive.dataset.state = state; $("vLiveText").textContent = text; }
   function vErr(msg, settings){
     var p = $("vErr"); p.textContent = msg || ""; p.hidden = !msg;
     if(msg && settings){ var b = document.createElement("button"); b.type = "button"; b.className = "tool small"; b.textContent = "Open voice settings"; b.style.marginLeft = "8px"; b.addEventListener("click", openVoiceSettings); p.append(" ", b); }
   }
   function micLabel(){ $("vMic").textContent = wantListen ? "Stop listening" : "Start listening"; }
-  function rebase(){ vBase = vText.value.replace(/\s+$/, ""); if(vBase) vBase += " "; }
+  function stoppedText(){ return vText.value.trim() ? "Stopped. Fix anything misheard, then tap Sort it." : "Stopped. Tap Start listening to try again."; }
   function startListening(){
     vErr("");
-    if(!SR){ setLive("off", "Voice typing isn't available in this browser. Type here, or use your keyboard's microphone."); vText.focus(); return; }
-    if(wantListen) return;
-    wantListen = true; vQuiet = 0; rebase(); micLabel(); runRec();
-  }
-  function runRec(){
-    try{
-      rec = new SR(); rec.lang = navigator.language || "en-NZ"; rec.continuous = true; rec.interimResults = true; vHeard = false;
-      rec.onstart = function(){ setLive("on", "Listening… speak now"); };
-      rec.onresult = function(e){
-        var fin = "", tmp = "";
-        for(var i = 0; i < e.results.length; i++){ var t = e.results[i][0].transcript; if(e.results[i].isFinal) fin += t; else tmp += t; }
-        vHeard = true; vText.value = vBase + (fin + tmp).replace(/^\s+/, ""); vText.scrollTop = vText.scrollHeight; lsSet("voiceDraft", vText.value);
-      };
-      rec.onerror = function(e){
-        if(e.error === "not-allowed" || e.error === "service-not-allowed"){ wantListen = false; vErr("The microphone is blocked for this app. Allow it in the browser's site settings for this page, then tap Start listening."); }
-        else if(e.error === "network"){ wantListen = false; vErr("Voice typing needs an internet connection. You can type instead, or save to the Inbox."); }
-        else if(e.error === "audio-capture"){ wantListen = false; vErr("No microphone was found."); }
-      };
-      rec.onend = function(){
-        rec = null;
-        vQuiet = vHeard ? 0 : vQuiet + 1;
-        if(wantListen && vQuiet < 2){ rebase(); setTimeout(function(){ if(wantListen && !rec) runRec(); }, 200); return; }
-        wantListen = false; micLabel();
-        setLive("off", vText.value.trim() ? "Stopped. Fix anything misheard, then tap Sort it." : "Stopped. Tap Start listening to try again.");
-      };
-      rec.start();
-    }catch(err){ rec = null; wantListen = false; micLabel(); setLive("off", "Tap Start listening to begin."); }
+    if(!K.canListen()){ setLive("off", NO_SR); vText.focus(); return; }
+    if(lis && lis.active) return;
+    wantListen = true; micLabel(); setLive("on", "Starting…");
+    lis = K.listen({
+      initial:vText.value, silenceMs:3000, waitMs:10000,
+      onState:function(){ setLive("on", "Listening… stops by itself when you pause"); },
+      onText:function(t){ vText.value = t; vText.scrollTop = vText.scrollHeight; lsSet("voiceDraft", t); },
+      onEnd:function(info){
+        lis = null; wantListen = false; micLabel();
+        if(info.reason === "blocked") vErr("The microphone is blocked for this app. Allow it in the browser's site settings for this page, then tap Start listening.");
+        else if(info.reason === "network") vErr("Voice typing needs an internet connection. You can type instead, or save to the Inbox.");
+        else if(info.reason === "nomic") vErr("No microphone was found.");
+        setLive("off", stoppedText());
+      }
+    });
   }
   function stopListening(){
     wantListen = false; micLabel();
-    if(rec){ try{ rec.stop(); }catch(e){} }
-    else setLive("off", vText.value.trim() ? "Stopped. Fix anything misheard, then tap Sort it." : "Not listening");
+    if(lis && lis.active) lis.stop(); else setLive("off", vText.value.trim() ? stoppedText() : "Not listening");
   }
   function showCapture(){ $("vCapture").hidden = false; $("vReview").hidden = true; vRows = null; }
+  function openDialog(){
+    vErr(""); cancelArmed = false; $("vCancel").textContent = "Cancel"; showCapture();
+    vDlg.hidden = false; document.body.style.overflow = "hidden";
+    setLive("off", K.canListen() ? "Not listening" : NO_SR);
+  }
   function openVoice(listen){
     if(doc === null) return;
     closeMenu();
-    if(vDlg.hidden){
-      vText.value = lsGet("voiceDraft", ""); showCapture(); vErr(""); cancelArmed = false; $("vCancel").textContent = "Cancel";
-      vDlg.hidden = false; document.body.style.overflow = "hidden";
-      setLive("off", SR ? "Not listening" : "Voice typing isn't available in this browser. Type here, or use your keyboard's microphone.");
-    }
+    if(vDlg.hidden){ curPending = null; vText.value = lsGet("voiceDraft", ""); openDialog(); }
     if(listen && !$("vCapture").hidden) startListening();
   }
   function closeVoice(discard){
     stopListening();
-    if(discard) lsSet("voiceDraft", null);
+    if(discard && !curPending) lsSet("voiceDraft", null);
+    curPending = null;
     vDlg.hidden = true; document.body.style.overflow = "";
   }
   function busy(on, label){
@@ -1460,100 +1409,18 @@ body.hide-done .todo-sec li.task.done{display:none}
     if(on) setLive("busy", label);
   }
 
-  /* Sorting with Claude */
-  var sdkP = null;
-  function loadSdk(){
-    if(window.Anthropic) return Promise.resolve(window.Anthropic);
-    if(!sdkP) sdkP = new Promise(function(res, rej){
-      var s = document.createElement("script"); s.src = "anthropic.min.js";
-      s.onload = function(){ window.Anthropic ? res(window.Anthropic) : rej(new Error("The Claude library didn't load.")); };
-      s.onerror = function(){ sdkP = null; rej(new Error("Couldn't load the Claude library. Check your connection.")); };
-      document.head.append(s);
-    });
-    return sdkP;
-  }
-  function sectionList(){
-    vSecMap = {}; var lines = [];
-    sections.forEach(function(s){
-      if(!s.num) return;
-      var id = "s" + s.num; if(vSecMap[id]) id += "-" + s.pi;
-      vSecMap[id] = { head:parts[s.pi].split("\n")[0], name:s.num + ". " + (s.short || s.title), gi:s.gi };
-      lines.push("- " + id + ": " + s.title + (s.priv ? " (private)" : (s.blurb ? " | " + s.blurb : "")));
-    });
-    return lines;
-  }
-  var SYSTEM = [
-    "You sort one person's spoken voice notes into their personal notes app. The text came from speech recognition, so expect misheard words, missing punctuation and filler.",
-    "Split the note into separate items when it covers several things. For each item, write it the way the person would jot it down: first person, plain and short, misheard words fixed when the meaning is clear, filler removed. Keep their meaning; don't add facts or advice.",
-    "kind is \"todo\" for something they need to do, otherwise \"note\". section is the id of the section it fits best; use \"inbox\" when nothing fits well or you're unsure.",
-    "alarms: only when they ask to be woken, alarmed or reminded at a particular clock time. label is a few words. time is 24-hour HH:MM. date is YYYY-MM-DD, or empty when they gave no day (the next time that clock time comes round). repeat is none, daily, weekdays or weekly.",
-    "events: appointments, meetings and plans on a particular day that belong in a calendar. date is required (YYYY-MM-DD); start and end are 24-hour HH:MM or empty when not said (empty start means all day). If you can't work out a day, make it a todo instead.",
-    "Don't repeat an alarm or event as a todo unless there is a separate task to do. Work out relative days (\"tomorrow\", \"next Tuesday\") from the current date you are given.",
-    "summary is one short sentence saying what you understood."
-  ].join("\n\n");
-  function schemaFor(ids){
-    var str = { type:"string" };
-    return { type:"object", additionalProperties:false, required:["summary", "items", "alarms", "events"], properties:{
-      summary:str,
-      items:{ type:"array", items:{ type:"object", additionalProperties:false, required:["kind", "section", "text"], properties:{
-        kind:{ type:"string", enum:["note", "todo"] }, section:{ type:"string", enum:ids.concat("inbox") }, text:str } } },
-      alarms:{ type:"array", items:{ type:"object", additionalProperties:false, required:["label", "date", "time", "repeat"], properties:{
-        label:str, date:str, time:str, repeat:{ type:"string", enum:["none", "daily", "weekdays", "weekly"] } } } },
-      events:{ type:"array", items:{ type:"object", additionalProperties:false, required:["title", "date", "start", "end", "location", "details"], properties:{
-        title:str, date:str, start:str, end:str, location:str, details:str } } }
-    } };
-  }
-  function nowText(){
-    var d = new Date(), tz = ""; try{ tz = Intl.DateTimeFormat().resolvedOptions().timeZone; }catch(e){}
-    return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + (tz ? " (" + tz + ")" : "") + ", that is " + ymd(d);
-  }
-  async function askClaude(A, key, text){
-    var secLines = sectionList();
-    var client = new A({ apiKey:key, dangerouslyAllowBrowser:true, baseURL:lsGet("claudeBase", null) || undefined, maxRetries:1, timeout:90000 });
-    var res = await client.beta.messages.create({
-      model:CLAUDE_MODEL,
-      max_tokens:16000,
-      betas:["server-side-fallback-2026-07-01"],
-      fallbacks:"default",
-      output_config:{ effort:"low", format:{ type:"json_schema", schema:schemaFor(Object.keys(vSecMap)) } },
-      system:SYSTEM,
-      messages:[{ role:"user", content:"Current date and time: " + nowText() + "\n\nSections:\n" + secLines.join("\n") + "\n\nVoice note:\n<voice_note>\n" + text + "\n</voice_note>" }]
-    });
-    if(res.stop_reason === "refusal"){ var rf = new Error("refusal"); rf.code = "refusal"; throw rf; }
-    var out = res.content.filter(function(b){ return b.type === "text"; }).map(function(b){ return b.text; }).join("");
-    var j;
-    try{ j = JSON.parse(out); }catch(e){ var bad = new Error(res.stop_reason === "max_tokens" ? "Claude's answer was cut short. Try a shorter note." : "Claude's answer couldn't be read. Try again."); throw bad; }
-    return {
-      summary:String(j.summary || ""),
-      items:(j.items || []).filter(function(it){ return it && norm(String(it.text || "")); }).map(function(it){ return { kind:it.kind === "todo" ? "todo" : "note", target:vSecMap[it.section] ? it.section : "inbox", text:norm(String(it.text)) }; }),
-      alarms:(j.alarms || []).filter(function(a){ return a && okTime(a.time); }).map(function(a){ return { label:norm(String(a.label || "Alarm")), date:parseYmd(a.date) ? a.date : "", time:a.time.length === 4 ? "0" + a.time : a.time, repeat:/^(daily|weekdays|weekly)$/.test(a.repeat) ? a.repeat : "none" }; }),
-      events:(j.events || []).filter(function(e){ return e && parseYmd(e.date); }).map(function(e){ return { title:norm(String(e.title || "Event")), date:e.date, start:okTime(e.start) ? e.start : "", end:okTime(e.end) ? e.end : "", location:norm(String(e.location || "")), details:String(e.details || "") }; })
-    };
-  }
-  function explain(err, A){
-    if(err && err.code === "refusal") return "Claude declined to sort this note. You can save it to the Inbox instead.";
-    if(A){
-      if(err instanceof A.AuthenticationError) return { msg:"Claude didn't accept the API key. Check it in Voice notes settings.", settings:true };
-      if(err instanceof A.PermissionDeniedError) return { msg:"This API key isn't allowed to do that. Check the key in the Claude Console.", settings:true };
-      if(err instanceof A.RateLimitError) return "Claude is busy, or your account has hit a usage limit. Try again in a minute.";
-      if(err instanceof A.APIConnectionError) return "Couldn't reach Claude. Check your connection, or save this to the Inbox for now.";
-      if(err instanceof A.BadRequestError) return /credit|balance|billing/i.test(err.message || "") ? "Your Claude account is out of credit. Add some at console.anthropic.com, or save this to the Inbox for now." : "Claude couldn't handle the request (" + (err.status || 400) + "). You can save this to the Inbox instead.";
-      if(err instanceof A.APIError) return "Claude had a problem" + (err.status ? " (" + err.status + ")" : "") + ". Try again in a moment.";
-    }
-    return (err && err.message) || "Something went wrong. Try again.";
-  }
+  /* Sorting */
   async function sortIt(){
     if(vBusy) return;
     var text = vText.value.trim();
     if(!text){ vErr("Say or type something first."); return; }
-    stopListening(); lsSet("voiceDraft", vText.value);
+    stopListening(); if(!curPending) lsSet("voiceDraft", vText.value);
     var key = lsGet("claudeKey", null);
     if(!key){ vErr("Add your Claude API key in Voice notes settings first, or save this to the Inbox for now.", true); return; }
-    if(navigator.onLine === false){ vErr("You're offline. Save this to the Inbox now and sort it when you're back online."); return; }
+    if(navigator.onLine === false){ vErr("You're offline. Save this to the Inbox now, or tap Later and sort it when you're back online."); return; }
     vErr(""); busy(true, "Sorting with Claude…");
-    var A = null;
-    try{ A = await loadSdk(); var r = await askClaude(A, key, text); busy(false); showReview(r); }
-    catch(err){ busy(false); setLive("off", "Not sorted"); var x = explain(err, A); if(typeof x === "string") vErr(x); else vErr(x.msg, x.settings); }
+    try{ var secs = K.sectionsFromDoc(doc); var r = await K.sortNote(key, text, secs); vSecMap = secs.map; busy(false); showReview(r); }
+    catch(err){ busy(false); setLive("off", "Not sorted"); var x = K.explain(err); vErr(x.msg, x.settings); }
   }
 
   /* Review */
@@ -1568,10 +1435,11 @@ body.hide-done .todo-sec li.task.done{display:none}
     var s = document.createElement("select"); s.className = "sec-pick"; s.setAttribute("aria-label", "Section");
     Object.keys(vSecMap).forEach(function(id){ var o = document.createElement("option"); o.value = id; o.textContent = vSecMap[id].name; s.append(o); });
     var o = document.createElement("option"); o.value = "inbox"; o.textContent = "Inbox"; s.append(o);
-    s.value = value; return s;
+    s.value = vSecMap[value] ? value : "inbox"; return s;
   }
   function tint(box, target){ var m = vSecMap[target]; box.style.setProperty("--gc", m && m.gi >= 0 ? "var(--g" + (m.gi % 5 + 1) + ")" : "var(--line)"); }
   function showReview(r){
+    vLast = r;
     vRows = { items:[], alarms:[], events:[] };
     $("vSummary").textContent = r.summary || "Here's what Claude found.";
     var wi = $("vItems"), wa = $("vAlarms"), we = $("vEvents"); wi.innerHTML = wa.innerHTML = we.innerHTML = "";
@@ -1581,7 +1449,7 @@ body.hide-done .todo-sec li.task.done{display:none}
       var kind = document.createElement("select"); kind.setAttribute("aria-label", "Type");
       [["todo", "To-do"], ["note", "Note"]].forEach(function(p){ var o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; kind.append(o); });
       kind.value = it.kind;
-      var sec = secPick(it.target); sec.addEventListener("change", function(){ tint(box, sec.value); }); tint(box, it.target);
+      var sec = secPick(it.target); sec.addEventListener("change", function(){ tint(box, sec.value); }); tint(box, sec.value);
       var ta = document.createElement("textarea"); ta.value = it.text; ta.setAttribute("aria-label", "Text");
       row.append(k.el, kind, sec); box.append(row, ta); wi.append(box);
       vRows.items.push(function(){ return k.box.checked && norm(ta.value) ? { kind:kind.value, target:sec.value, text:ta.value } : null; });
@@ -1615,31 +1483,98 @@ body.hide-done .todo-sec li.task.done{display:none}
     $("vCapture").hidden = true; $("vReview").hidden = false;
     vDlg.scrollTop = 0;
   }
+  /* After a note is dealt with: drop it from the queue and move on to the next waiting one, if any. */
+  async function doneWith(msg){
+    var was = curPending;
+    if(was) await K.pending.remove(was.id).catch(function(){});
+    closeVoice(true);
+    flash(msg);
+    var left = await refreshPending();
+    if(was && left.length) openPending(left[0]);
+  }
   function saveReview(){
     if(!vRows) return;
     function take(list){ return list.map(function(f){ return f(); }).filter(Boolean); }
     var items = take(vRows.items), alarms = take(vRows.alarms), events = take(vRows.events);
     if(!items.length && !alarms.length && !events.length){ $("vSaveErr").textContent = "Nothing is ticked to keep."; $("vSaveErr").hidden = false; return; }
     var n = applyVoice(items, alarms, events);
-    closeVoice(true);
-    flash(n === 1 ? "Saved 1 line from your voice note" : "Saved " + n + " lines from your voice note");
+    doneWith(n === 1 ? "Saved 1 line from your voice note" : "Saved " + n + " lines from your voice note");
   }
   function saveToInbox(){
     var text = vText.value.trim(); if(!text){ vErr("Say or type something first."); return; }
     stopListening();
     applyVoice([{ kind:"note", target:"inbox", text:text }], [], []);
+    doneWith("Saved to the Inbox");
+  }
+  /* Keep it in the review-later queue. */
+  async function saveLater(){
+    var text = vText.value.trim(); if(!text){ closeVoice(true); return; }
+    stopListening();
+    if(!curPending) await K.pending.put({ id:K.pending.newId(), created:Date.now(), text:text, result:$("vReview").hidden ? null : vLast, secMap:$("vReview").hidden ? null : vSecMap, error:"" });
+    else if(!$("vReview").hidden){ curPending.result = vLast; curPending.secMap = vSecMap; curPending.text = text; await K.pending.put(curPending); }
     closeVoice(true);
-    flash("Saved to the Inbox");
+    refreshPending();
+    flash("Kept for review later");
+  }
+  async function discard(){
+    var was = curPending;
+    if(was) await K.pending.remove(was.id).catch(function(){});
+    closeVoice(true);
+    if(was){ var left = await refreshPending(); flash("Voice note discarded"); if(left.length) openPending(left[0]); }
+  }
+
+  /* Review-later queue */
+  async function refreshPending(){
+    var list = [];
+    try{ list = await K.pending.list(); }catch(e){}
+    var waiting = list.filter(function(p){ return !p.approved; });
+    $("pendingText").textContent = waiting.length === 1 ? "1 voice note is waiting for review." : waiting.length + " voice notes are waiting for review.";
+    $("pending").hidden = !waiting.length || doc === null;
+    return waiting;
+  }
+  function openPending(item){
+    if(doc === null || !item) return;
+    closeMenu();
+    if(!vDlg.hidden) closeVoice(false);
+    curPending = item;
+    vText.value = item.text; openDialog();
+    vSecMap = item.secMap || K.sectionsFromDoc(doc).map;
+    if(item.result) showReview(item.result);
+    else { setLive("off", "Not sorted yet"); if(item.error) vErr(item.error); }
+  }
+  async function reviewId(id){
+    var list = await refreshPending();
+    openPending(list.filter(function(p){ return p.id === id; })[0] || list[0]);
+  }
+  /* Notes approved with "Save all" from a notification are added the next time the app runs. */
+  async function applyApproved(){
+    if(doc === null) return;
+    var list = []; try{ list = await K.pending.list(); }catch(e){ return; }
+    var n = 0;
+    for(var i = 0; i < list.length; i++){
+      var p = list[i]; if(!p.approved || !p.result) continue;
+      n += applyVoice(p.result.items, p.result.alarms, p.result.events, p.secMap || {});
+      await K.pending.remove(p.id).catch(function(){});
+    }
+    if(n) flash(n === 1 ? "Added 1 line from an approved voice note" : "Added " + n + " lines from approved voice notes");
+    refreshPending();
   }
 
   /* Settings */
   var vsDlg = $("voiceSetDialog");
+  function notifState(){
+    var s = !("Notification" in window) ? "unsupported" : Notification.permission;
+    $("notifState").textContent = s === "granted" ? "Notifications are on." : s === "denied" ? "Notifications are blocked. Turn them on for Keep Notes in your phone's Settings › Notifications." : s === "unsupported" ? "This browser can't show notifications." : "Notifications are off.";
+    $("notifBtn").hidden = s !== "default";
+  }
   function openVoiceSettings(){
     closeMenu();
     $("claudeKey").value = ""; $("claudeKey").placeholder = lsGet("claudeKey", null) ? "Saved on this device" : "sk-ant-…";
     $("claudeKeyRemove").hidden = !lsGet("claudeKey", null); $("claudeKeyRemove").classList.remove("armed"); $("claudeKeyRemove").textContent = "Remove key";
     $("autoVoice").checked = !!lsGet("autoVoice", false); $("voiceSetErr").hidden = true;
-    vsDlg.hidden = false; $("claudeKey").focus();
+    $("recordUrl").textContent = new URL("record/", K.ROOT).href.replace(/^https?:\/\//, "");
+    notifState();
+    vsDlg.hidden = false;
   }
   function closeVoiceSettings(){ vsDlg.hidden = true; }
   $("voiceSetForm").addEventListener("submit", function(e){
@@ -1656,6 +1591,12 @@ body.hide-done .todo-sec li.task.done{display:none}
     if(!b.classList.contains("armed")){ b.classList.add("armed"); b.textContent = "Tap again to remove"; return; }
     lsSet("claudeKey", null); closeVoiceSettings(); flash("Claude key removed from this device");
   });
+  $("notifBtn").addEventListener("click", function(){ if("Notification" in window) Notification.requestPermission().then(notifState); });
+  $("reviewCal").addEventListener("click", function(){
+    var t = okTime($("reviewTime").value) ? $("reviewTime").value : "20:00";
+    openCal({ kind:"event", title:"Review voice notes", date:K.nextDate ? K.nextDate(t) : K.ymd(new Date()), start:t, end:"", location:"", recur:"FREQ=DAILY",
+      details:"Open Keep Notes to review today's voice notes: " + new URL("?review=1", K.ROOT).href });
+  });
   $("voiceSetClose").addEventListener("click", closeVoiceSettings);
   vsDlg.addEventListener("click", function(e){ if(e.target === vsDlg) closeVoiceSettings(); });
   vsDlg.addEventListener("keydown", function(e){ if(e.key === "Escape") closeVoiceSettings(); });
@@ -1663,23 +1604,31 @@ body.hide-done .todo-sec li.task.done{display:none}
   /* Wiring */
   $("voiceFab").addEventListener("click", function(){ openVoice(true); });
   $("mVoice").addEventListener("click", openVoiceSettings);
+  $("pendingReview").addEventListener("click", function(){ reviewId(null); });
   $("vMic").addEventListener("click", function(){ if(wantListen) stopListening(); else startListening(); });
   $("vSort").addEventListener("click", sortIt);
   $("vInbox").addEventListener("click", saveToInbox);
   $("vSave").addEventListener("click", saveReview);
+  $("vLater").addEventListener("click", saveLater);
+  $("vLater2").addEventListener("click", saveLater);
   $("vBack").addEventListener("click", function(){ showCapture(); setLive("off", "Not listening"); });
   $("vCancel").addEventListener("click", function(){
     if(vText.value.trim() && !cancelArmed){ cancelArmed = true; $("vCancel").textContent = "Tap again to discard"; return; }
-    closeVoice(true);
+    discard();
   });
-  vText.addEventListener("input", function(){ if(wantListen) stopListening(); lsSet("voiceDraft", vText.value); cancelArmed = false; $("vCancel").textContent = "Cancel"; });
-  vDlg.addEventListener("keydown", function(e){ if(e.key === "Escape" && !vBusy){ if(!$("vReview").hidden){ showCapture(); } else { stopListening(); vDlg.hidden = true; document.body.style.overflow = ""; } } });
+  vText.addEventListener("input", function(){ if(wantListen) stopListening(); if(!curPending) lsSet("voiceDraft", vText.value); cancelArmed = false; $("vCancel").textContent = "Cancel"; });
+  vDlg.addEventListener("keydown", function(e){ if(e.key === "Escape" && !vBusy){ if(!$("vReview").hidden){ showCapture(); } else { stopListening(); curPending = null; vDlg.hidden = true; document.body.style.overflow = ""; } } });
   var hiddenAt = 0;
   document.addEventListener("visibilitychange", function(){
     if(document.hidden){ hiddenAt = Date.now(); if(wantListen) stopListening(); return; }
+    applyApproved();
     if(lsGet("autoVoice", false) && hiddenAt && Date.now() - hiddenAt > 60000 && vDlg.hidden && vsDlg.hidden) openVoice(true);
   });
-  window.__keepNotesVoice = { parseReminder:parseReminder, gcalUrl:gcalUrl, alarmLine:alarmLine, eventLine:eventLine, applyVoice:applyVoice, showReview:showReview };
+  if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function(e){
+    if(e.data && e.data.type === "review") reviewId(e.data.id);
+    if(e.data && e.data.type === "approved") applyApproved();
+  });
+  window.__keepNotesVoice = { parseReminder:parseReminder, gcalUrl:gcalUrl, alarmLine:alarmLine, eventLine:eventLine, applyVoice:applyVoice, showReview:showReview, refreshPending:refreshPending, applyApproved:applyApproved };
 
   /* ---------- start ---------- */
   render();
@@ -1687,9 +1636,13 @@ body.hide-done .todo-sec li.task.done{display:none}
   if(lsGet("conflictLocal", null)){ $("conflictText").textContent = "An earlier sync clash left this device's version waiting. The synced version is shown."; $("conflict").hidden = false; }
   if(location.hash) goHash();
   syncNow();
-  // Opened from the "Record" shortcut, or set to listen on open.
-  if(/[?&]record\b/.test(location.search)){ try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){} openVoice(true); }
-  else if(lsGet("autoVoice", false)) openVoice(true);
+  // Opened from the "Record" shortcut, from a review notification or reminder, or set to listen on open.
+  var startQ = new URLSearchParams(location.search);
+  if(startQ.has("record") || startQ.has("review")){ try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){} }
+  applyApproved().then(function(){
+    if(startQ.has("review")) reviewId(startQ.get("review"));
+    else if(startQ.has("record") || lsGet("autoVoice", false)) openVoice(true);
+  });
   if(FS){
     idbGet("handle").then(async function(h){
       if(!h) return;

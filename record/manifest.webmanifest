@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "Record a voice note",
+  "short_name": "Record",
+  "description": "Starts listening straight away, sorts the note and leaves it for review in Keep Notes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111715",
+  "theme_color": "#1e6576",
+  "icons": [
+    { "src": "../icon-mic-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "../icon-mic-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

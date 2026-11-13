@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Record</title>
+<meta name="theme-color" content="#1e6576">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="../icon-mic-192.png">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f2f4f3; --surface:#ffffff; --fg:#17201d; --muted:#56635e; --line:#d3dbd7;
+  --accent:#1e6576; --accent-soft:#d9eaee; --on-accent:#ffffff; --danger:#a33a2e; --ok:#2a7a57;
+  --font:"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#111715; --surface:#18201d; --fg:#e3eae7; --muted:#9aa7a2; --line:#2d3935;
+  --accent:#6dbccc; --accent-soft:#1b373d; --on-accent:#0e1513; --danger:#f08b7e; --ok:#7fd2a9; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111715; --surface:#18201d; --fg:#e3eae7; --muted:#9aa7a2; --line:#2d3935;
+  --accent:#6dbccc; --accent-soft:#1b373d; --on-accent:#0e1513; --danger:#f08b7e; --ok:#7fd2a9; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.orb{width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);transition:background .2s,color .2s}
+.orb svg{width:54px;height:54px}
+.orb[data-state="on"]{background:var(--accent);color:var(--on-accent);animation:breathe 1.6s ease-in-out infinite}
+.orb[data-state="busy"]{animation:breathe 1s ease-in-out infinite}
+.orb[data-state="done"]{background:var(--ok);color:var(--on-accent)}
+@keyframes breathe{50%{transform:scale(1.07);box-shadow:0 0 0 14px color-mix(in srgb,var(--accent) 18%,transparent)}}
+@media (prefers-reduced-motion: reduce){.orb{animation:none!important}}
+.status{font-weight:600;font-size:19px;margin:0}
+.text{margin:0;max-width:34ch;color:var(--muted);font-size:16px;min-height:1.5em;overflow-wrap:anywhere}
+.note{margin:0;max-width:36ch;font-size:14.5px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.btn,.tool{font:600 15px var(--font);padding:11px 18px;border-radius:10px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn{border:0;background:var(--accent);color:var(--on-accent)}
+.tool{border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+</style>
+</head>
+<body>
+<main>
+  <div class="orb" id="orb" data-state="off" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
+  </div>
+  <p class="status" id="status" role="status" aria-live="polite">Starting…</p>
+  <p class="text" id="text"></p>
+  <div class="actions" id="during">
+    <button class="btn" type="button" id="done">Done</button>
+    <button class="tool" type="button" id="cancel">Cancel</button>
+  </div>
+  <p class="note" id="note" hidden></p>
+  <div class="actions" id="after" hidden>
+    <button class="btn" type="button" id="again">Record another</button>
+    <a class="tool" id="openNotes" href="../">Open Notes</a>
+    <button class="tool" type="button" id="allow" hidden>Allow notifications</button>
+  </div>
+</main>
+<script src="../voice-core.js"></script>
+<script>
+(function(){
+  "use strict";
+  var K = window.KNV, $ = function(id){ return document.getElementById(id); };
+  var lis = null, text = "", phase = "idle", cancelled = false;   // phase: idle, listening, busy, finished
+
+  function show(state, msg){ $("orb").dataset.state = state; $("status").textContent = msg; }
+  function closeSoon(ms){ setTimeout(function(){ if(phase === "finished") try{ window.close(); }catch(e){} }, ms); }
+
+  function start(){
+    if(phase === "listening" || phase === "busy") return;
+    phase = "listening"; cancelled = false; text = "";
+    $("text").textContent = ""; $("note").hidden = true; $("after").hidden = true; $("during").hidden = false; $("allow").hidden = true;
+    if(!K.canListen()){ finishNoText("unsupported"); return; }
+    show("on", "Listening…");
+    lis = K.listen({
+      silenceMs:2500, waitMs:9000,
+      onState:function(){ show("on", "Listening… just talk"); },
+      onText:function(t){ text = t; $("text").textContent = t; },
+      onEnd:function(info){ lis = null; if(cancelled) return; if(info.text) text = info.text; finish(info.reason); }
+    });
+  }
+
+  function finishNoText(reason){
+    phase = "finished"; $("during").hidden = true; $("after").hidden = false;
+    var msg = { blocked:"The microphone is blocked. Allow it for Record in your phone's Settings › Apps › Record › Permissions.",
+      network:"Voice typing needs an internet connection.", nomic:"No microphone was found.",
+      unsupported:"Voice typing isn't available here.", failed:"Couldn't start listening." }[reason];
+    show("off", msg || "Didn't catch anything.");
+    if(!msg) closeSoon(2500);
+  }
+
+  async function finish(reason){
+    if(phase !== "listening") return;
+    text = (text || "").trim();
+    if(!text) return finishNoText(reason);
+    phase = "busy"; $("during").hidden = true;
+    var item = { id:K.pending.newId(), created:Date.now(), text:text, result:null, secMap:null, error:"" };
+    var key = K.lsGet("claudeKey", null), doc = K.lsGet("doc", null);
+    if(!doc) item.error = "Keep Notes isn't set up on this phone yet.";
+    else if(!key) item.error = "No Claude key yet, so it wasn't sorted.";
+    else if(navigator.onLine === false) item.error = "You were offline, so it wasn't sorted.";
+    else {
+      show("busy", "Sorting…");
+      try{ var secs = K.sectionsFromDoc(doc); item.result = await K.sortNote(key, text, secs); item.secMap = secs.map; }
+      catch(err){ item.error = K.explain(err).msg; }
+    }
+    try{ await K.pending.put(item); }
+    catch(e){ phase = "finished"; show("off", "Couldn't save the note on this phone."); $("note").textContent = text; $("note").hidden = false; $("after").hidden = false; return; }
+    var shown = false; try{ shown = await K.notify(item); }catch(e){}
+    phase = "finished";
+    show("done", item.result ? "Sorted. Saved for review." : "Saved for review.");
+    $("note").textContent = item.result ? (K.countText(item.result) ? K.countText(item.result) + ". " : "") + (item.result.summary || "") : item.error;
+    $("note").hidden = false; $("after").hidden = false;
+    if(!shown && "Notification" in window && Notification.permission === "default") $("allow").hidden = false;
+    if(shown) closeSoon(1800);
+    window.__lastRecordItem = item;
+  }
+
+  $("done").addEventListener("click", function(){ if(lis && lis.active) lis.stop(); else finish("stopped"); });
+  $("cancel").addEventListener("click", function(){
+    cancelled = true; if(lis && lis.active) lis.stop();
+    phase = "finished"; show("off", "Cancelled. Nothing was saved."); $("during").hidden = true; $("after").hidden = false; closeSoon(900);
+  });
+  $("again").addEventListener("click", function(){ phase = "idle"; start(); });
+  $("allow").addEventListener("click", function(){
+    Notification.requestPermission().then(function(p){
+      if(p === "granted"){ $("allow").hidden = true; if(window.__lastRecordItem) K.notify(window.__lastRecordItem).then(function(ok){ if(ok) closeSoon(1200); }); }
+    });
+  });
+
+  // Leaving mid-sentence keeps what was said; coming back (e.g. another double-press) starts a fresh recording.
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden){ if(phase === "listening" && lis && lis.active) lis.stop(); return; }
+    if(phase === "finished" || phase === "idle"){ phase = "idle"; start(); }
+  });
+
+  if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register("../sw.js", { scope:"../" }).catch(function(){});
+  }
+  // For tests: pretend the given words were heard and finish.
+  window.__recordTest = function(words){ if(lis && lis.active){ cancelled = true; lis.stop(); } cancelled = false; phase = "listening"; text = words; return finish("silence"); };
+  start();
+})();
+</script>
+</body>
+</html>
